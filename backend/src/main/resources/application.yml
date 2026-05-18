@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: poliklinik-api
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:sifa_poliklinik}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+sifa:
+  jwt:
+    secret: ${JWT_SECRET:0123456789012345678901234567890123456789012345678901234567890123}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+
+  clinic:
+    slot-minutes: 30
+    day-start: "09:00"
+    day-end: "17:00"
+    lunch-start: "12:00"
+    lunch-end: "13:00"
+    alternative-days-range: 14
