@@ -172,10 +172,13 @@ export function CashierPage() {
   return (
     <RequireRole role="CASHIER">
       <div className="page">
-        <h2>Vezne</h2>
+        <h2>Vezne İşlemleri</h2>
         <p className="muted">
-          Randevu numarası ile işlem ekleyin; önce doktor muayenesi tamamlanmış olmalıdır (ziyaret kaydı).
+          Randevu numarası ile fatura kalemi ekleyin ve mock SGK servisi üzerinden sigorta indirimi hesaplayıp ödemeyi tamamlayın.
         </p>
+        <div className="alert subtle" style={{ borderLeft: '4px solid var(--brand)', background: 'rgba(30, 58, 138, 0.02)', padding: '1rem 1.25rem', marginBottom: '0.5rem' }}>
+          💡 <strong>Vezne Kılavuzu:</strong> Ödeme alınabilmesi için öncelikle ilgili randevunun doktor muayenesinin (Ziyaret Kaydı) tamamlanmış olması gerekir. SGK sigorta sorgulama servisi, T.C. Kimlik numarası üzerinden indirim oranını hesaplar.
+        </div>
 
         <div className="card stack">
           <h3>Tedavi türü tanımla</h3>

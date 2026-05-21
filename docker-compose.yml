@@ -10,5 +10,18 @@ services:
     volumes:
       - sifa_pgdata:/var/lib/postgresql/data
 
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=sifa_poliklinik
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - db
+
 volumes:
   sifa_pgdata:

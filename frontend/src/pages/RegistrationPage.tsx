@@ -55,8 +55,11 @@ export function RegistrationPage() {
   return (
     <RequireRole role="REGISTRATION_CLERK">
       <div className="page">
-        <h2>Hasta kayıt</h2>
-        <p className="muted">Muayene olacak hastanın kimlik bilgilerini girin.</p>
+        <h2>Hasta Kayıt İşlemleri</h2>
+        <p className="muted">Muayene olacak hastanın kimlik ve iletişim bilgilerini girin.</p>
+        <div className="alert subtle" style={{ borderLeft: '4px solid var(--brand)', background: 'rgba(30, 58, 138, 0.02)', padding: '1rem 1.25rem', marginBottom: '0.5rem' }}>
+          💡 <strong>Kurumsal Kayıt Kılavuzu:</strong> Yeni hasta kaydı yaparken T.C. Kimlik numarasının 11 haneli ve benzersiz olduğunu doğrulayınız. Kaydı tamamlanan hastalar anında randevu oluşturma sistemine yansıyacaktır.
+        </div>
         <form className="card stack narrow" onSubmit={onSubmit}>
           <label className="field">
             <span>TC kimlik no</span>

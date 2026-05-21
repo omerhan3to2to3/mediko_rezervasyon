@@ -144,8 +144,11 @@ export function AppointmentPage() {
   return (
     <RequireRole role="APPOINTMENT_CLERK">
       <div className="page">
-        <h2>Randevu</h2>
-        <p className="muted">Klinik ve tarihe göre müsait doktor slotları; hasta TC ile eşleştirin.</p>
+        <h2>Randevu İşlemleri</h2>
+        <p className="muted">Klinik ve tarihe göre müsait doktor slotlarını sorgulayıp hasta T.C. numarası ile randevu oluşturun.</p>
+        <div className="alert subtle" style={{ borderLeft: '4px solid var(--brand)', background: 'rgba(30, 58, 138, 0.02)', padding: '1rem 1.25rem', marginBottom: '0.5rem' }}>
+          💡 <strong>Randevu Kuralları:</strong> Poliklinik çalışma saatleri 09:00 - 17:00 arasındadır. 12:00 - 13:00 saatleri arası öğle tatilidir. Randevular 30 dakikalık zaman dilimlerinde verilebilir.
+        </div>
 
         <div className="card stack">
           <h3>Hasta</h3>
