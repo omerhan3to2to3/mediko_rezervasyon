@@ -23,6 +23,10 @@ public final class DtoMapper {
     }
 
     public static AppointmentResponseDto appointment(Appointment a) {
+        return appointment(a, null, false);
+    }
+
+    public static AppointmentResponseDto appointment(Appointment a, Long visitId, boolean paid) {
         var pt = a.getPatient();
         var dr = a.getDoctor();
         var cl = dr.getClinic();
@@ -31,23 +35,33 @@ public final class DtoMapper {
                 a.getId(),
                 pt.getId(),
                 patientName,
+                pt.getTcKimlik(),
                 dr.getId(),
                 dr.getFullName(),
                 cl.getId(),
                 cl.getName(),
                 a.getStartAt(),
                 a.getEndAt(),
-                a.getStatus());
+                a.getStatus(),
+                visitId,
+                paid);
     }
 
     public static VisitResponseDto visit(VisitRecord v) {
+        var appt = v.getAppointment();
+        var doctor = v.getDoctor();
+        var clinic = doctor.getClinic();
         return new VisitResponseDto(
                 v.getId(),
-                v.getAppointment().getId(),
-                v.getDoctor().getId(),
+                appt.getId(),
+                doctor.getId(),
+                doctor.getFullName(),
+                clinic.getName(),
+                appt.getStartAt(),
                 v.getDiagnosisNotes(),
                 v.getTreatmentNotes());
     }
+
 
     public static ClinicalDocumentResponseDto document(ClinicalDocument d) {
         return new ClinicalDocumentResponseDto(d.getId(), d.getDocType(), d.getContentText(), d.getCreatedAt());

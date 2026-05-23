@@ -56,7 +56,7 @@ public class PatientController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('REGISTRATION_CLERK','APPOINTMENT_CLERK','DOCTOR','CASHIER')")
+    @PreAuthorize("hasAnyRole('REGISTRATION_CLERK','APPOINTMENT_CLERK','DOCTOR','CASHIER','ADMIN')")
     public List<PatientResponseDto> search(@RequestParam String q, Authentication auth) {
         return patientService.search(q, auth).stream().map(DtoMapper::patient).toList();
     }

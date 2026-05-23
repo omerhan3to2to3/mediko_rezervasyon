@@ -19,4 +19,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     @EntityGraph(attributePaths = {"clinic", "appUser"})
     List<Doctor> findByActiveTrueOrderByFullNameAsc();
+
+    long countByClinicId(Long clinicId);
+
+    boolean existsByClinicId(Long clinicId);
 }

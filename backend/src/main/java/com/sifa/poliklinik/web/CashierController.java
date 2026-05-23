@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,5 +69,12 @@ public class CashierController {
                         : BigDecimal.ZERO;
         BigDecimal discount = insuranceMockService.discountAmount(gross, quote.coverageRatePercent());
         return new InsuranceQuoteResponse(quote.coverageRatePercent(), quote.message(), discount, gross);
+    }
+
+    @DeleteMapping("/appointments/{appointmentId}/billing-lines/{lineId}")
+    @PreAuthorize("hasRole('CASHIER')")
+    public ResponseEntity<Void> deleteLine(@PathVariable Long appointmentId, @PathVariable Long lineId) {
+        billingService.deleteLine(lineId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -4,7 +4,7 @@ import { RequireRole } from '../components/RequireRole'
 import { apiFetch, isApiError } from '../api/http'
 import type { Role } from '../auth/AuthContext'
 
-type Clinic = { id: number; name: string; active: boolean }
+type Clinic = { id: number; name: string; active: boolean; doctorCount?: number }
 type AdminUser = {
   id: number
   username: string
@@ -25,6 +25,147 @@ const roleLabels: Record<Role, string> = {
   DOCTOR: 'Doktor',
 }
 
+type Patient = {
+  id: number
+  tcKimlik: string
+  firstName: string
+  lastName: string
+  phone?: string | null
+  email?: string | null
+}
+
+type AppointmentResponse = {
+  id: number
+  patientId: number
+  patientName: string
+  patientTc: string
+  doctorId: number
+  doctorName: string
+  clinicId: number
+  clinicName: string
+  startAt: string
+  endAt: string
+  status: string
+  visitId: number | null
+  paid: boolean
+}
+
+function PatientSearchCard() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [loading, setLoading] = useState(false)
+  const [patientPage, setPatientPage] = useState(1)
+  const patientPerPage = 10
+
+  async function fetchPatients(query: string) {
+    setLoading(true)
+    try {
+      const data = await apiFetch<Patient[]>(`/api/patients/search?q=${encodeURIComponent(query)}`)
+      setPatients(data ?? [])
+    } catch (err) {
+      console.error('Hasta arama hatası:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPatients('')
+  }, [])
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      fetchPatients(searchQuery)
+      setPatientPage(1) // Reset page on search query change
+    }, 300)
+    return () => clearTimeout(delayDebounce)
+  }, [searchQuery])
+
+  const paginatedPatients = useMemo(() => {
+    const start = (patientPage - 1) * patientPerPage
+    return patients.slice(start, start + patientPerPage)
+  }, [patients, patientPage])
+
+  const totalPatientPages = Math.ceil(patients.length / patientPerPage)
+
+  return (
+    <div className="card stack mt">
+      <h3>Kayıtlı Hastalar & Bilgileri</h3>
+      <p className="muted small">
+        Sistemde kayıtlı olan tüm hastaları T.C. Kimlik numarası, ad veya soyad ile arayabilir ve iletişim bilgilerini görüntüleyebilirsiniz.
+      </p>
+      
+      <div className="field">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="T.C. Kimlik, Ad veya Soyad ile ara..."
+          style={{ width: '100%' }}
+        />
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--muted)' }}>
+          Hastalar yükleniyor...
+        </div>
+      ) : patients.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--muted)', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+          Aranan kriterlere uygun kayıtlı hasta bulunamadı.
+        </div>
+      ) : (
+        <>
+          <div className="table-wrap" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>T.C. Kimlik</th>
+                  <th>Ad Soyad</th>
+                  <th>Telefon</th>
+                  <th>E-posta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedPatients.map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 600 }}>{p.tcKimlik}</td>
+                    <td>{p.firstName} {p.lastName}</td>
+                    <td>{p.phone || <span className="muted">-</span>}</td>
+                    <td>{p.email || <span className="muted">-</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPatientPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={patientPage === 1}
+                onClick={() => setPatientPage(prev => Math.max(1, prev - 1))}
+              >
+                ◀ Önceki
+              </button>
+              <span className="muted small">
+                Sayfa <strong>{patientPage}</strong> / {totalPatientPages}
+              </span>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={patientPage === totalPatientPages}
+                onClick={() => setPatientPage(prev => Math.min(totalPatientPages, prev + 1))}
+              >
+                Sonraki ▶
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [clinics, setClinics] = useState<Clinic[]>([])
@@ -33,7 +174,9 @@ export function AdminPage() {
   const [selectedRole, setSelectedRole] = useState<Role | ''>('')
   const [clinicId, setClinicId] = useState<number | ''>('')
   const [doctorFullName, setDoctorFullName] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
+  const [userMsg, setUserMsg] = useState<string | null>(null)
+  const [clinicMsg, setClinicMsg] = useState<string | null>(null)
+  const [reportMsg, setReportMsg] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [newClinicName, setNewClinicName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -42,6 +185,21 @@ export function AdminPage() {
   const [editRole, setEditRole] = useState<Role | ''>('')
   const [editClinicId, setEditClinicId] = useState<number | ''>('')
   const [editDoctorName, setEditDoctorName] = useState('')
+  const [reportRows, setReportRows] = useState<AppointmentResponse[] | null>(null)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportPage, setReportPage] = useState(1)
+  const reportPerPage = 10
+
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [userPage, setUserPage] = useState(1)
+  const userPerPage = 10
+
+  const [editingClinicId, setEditingClinicId] = useState<number | null>(null)
+  const [editClinicName, setEditClinicName] = useState('')
+  const [clinicSearchQuery, setClinicSearchQuery] = useState('')
+  const [clinicPage, setClinicPage] = useState(1)
+  const clinicPerPage = 10
+
   const [reportPeriod, setReportPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [reportDate, setReportDate] = useState(() => new Date().toISOString().slice(0, 10))
 
@@ -62,13 +220,13 @@ export function AdminPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    setMsg(null)
+    setUserMsg(null)
     if (selectedRole === '') {
-      setMsg('Bir rol seçmelisiniz.')
+      setUserMsg('Bir rol seçmelisiniz.')
       return
     }
     if (hasDoctorRole && clinicId === '') {
-      setMsg('Doktor rolü için klinik seçimi zorunludur.')
+      setUserMsg('Doktor rolü için klinik seçimi zorunludur.')
       return
     }
     setPending(true)
@@ -83,7 +241,7 @@ export function AdminPage() {
           doctorFullName: hasDoctorRole ? doctorFullName.trim() || undefined : undefined,
         }),
       })
-      setMsg('Kullanıcı oluşturuldu.')
+      setUserMsg('Kullanıcı oluşturuldu.')
       setUsername('')
       setPassword('')
       setSelectedRole('')
@@ -91,7 +249,7 @@ export function AdminPage() {
       setDoctorFullName('')
       await loadData()
     } catch (err: unknown) {
-      setMsg(isApiError(err) ? err.detail : 'Kullanıcı oluşturulamadı')
+      setUserMsg(isApiError(err) ? err.detail : 'Kullanıcı oluşturulamadı')
     } finally {
       setPending(false)
     }
@@ -99,17 +257,17 @@ export function AdminPage() {
 
   async function createClinic(e: FormEvent) {
     e.preventDefault()
-    setMsg(null)
+    setClinicMsg(null)
     try {
       await apiFetch('/api/admin/clinics', {
         method: 'POST',
         body: JSON.stringify({ name: newClinicName.trim() }),
       })
       setNewClinicName('')
-      setMsg('Yeni klinik eklendi.')
+      setClinicMsg('Yeni klinik eklendi.')
       await loadData()
     } catch (err: unknown) {
-      setMsg(isApiError(err) ? err.detail : 'Klinik eklenemedi')
+      setClinicMsg(isApiError(err) ? err.detail : 'Klinik eklenemedi')
     }
   }
 
@@ -133,13 +291,13 @@ export function AdminPage() {
   }
 
   async function saveEdit(userId: number) {
-    setMsg(null)
+    setUserMsg(null)
     if (editRole === '') {
-      setMsg('Bir rol seçmelisiniz.')
+      setUserMsg('Bir rol seçmelisiniz.')
       return
     }
     if (editRole === 'DOCTOR' && editClinicId === '') {
-      setMsg('Doktor rolü için klinik seçimi zorunludur.')
+      setUserMsg('Doktor rolü için klinik seçimi zorunludur.')
       return
     }
     try {
@@ -153,33 +311,141 @@ export function AdminPage() {
           doctorFullName: editRole === 'DOCTOR' ? editDoctorName.trim() || undefined : undefined,
         }),
       })
-      setMsg('Kullanıcı güncellendi.')
+      setUserMsg('Kullanıcı güncellendi.')
       cancelEdit()
       await loadData()
     } catch (err: unknown) {
-      setMsg(isApiError(err) ? err.detail : 'Kullanıcı güncellenemedi')
+      setUserMsg(isApiError(err) ? err.detail : 'Kullanıcı güncellenemedi')
     }
   }
 
   async function deleteUser(userId: number, usernameText: string) {
     if (!confirm(`"${usernameText}" kullanıcısını silmek istiyor musunuz?`)) return
-    setMsg(null)
+    setUserMsg(null)
     try {
       await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
-      setMsg('Kullanıcı silindi.')
+      setUserMsg('Kullanıcı silindi.')
       if (editingId === userId) cancelEdit()
       await loadData()
     } catch (err: unknown) {
-      setMsg(isApiError(err) ? err.detail : 'Kullanıcı silinemedi')
+      setUserMsg(isApiError(err) ? err.detail : 'Kullanıcı silinemedi')
     }
   }
 
+  function startClinicEdit(c: Clinic) {
+    setEditingClinicId(c.id)
+    setEditClinicName(c.name)
+  }
+
+  function cancelClinicEdit() {
+    setEditingClinicId(null)
+    setEditClinicName('')
+  }
+
+  async function saveClinicEdit(cId: number) {
+    setClinicMsg(null)
+    if (!editClinicName.trim()) {
+      setClinicMsg('Klinik adı boş olamaz.')
+      return
+    }
+    try {
+      await apiFetch(`/api/admin/clinics/${cId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: editClinicName.trim() }),
+      })
+      setClinicMsg('Klinik güncellendi.')
+      cancelClinicEdit()
+      await loadData()
+    } catch (err: unknown) {
+      setClinicMsg(isApiError(err) ? err.detail : 'Klinik güncellenemedi')
+    }
+  }
+
+  async function deleteClinic(cId: number, nameText: string) {
+    if (!confirm(`"${nameText}" kliniğini silmek istediğinizden emin misiniz?`)) return
+    setClinicMsg(null)
+    try {
+      await apiFetch(`/api/admin/clinics/${cId}`, { method: 'DELETE' })
+      setClinicMsg('Klinik silindi.')
+      await loadData()
+    } catch (err: unknown) {
+      setClinicMsg(isApiError(err) ? err.detail : 'Klinik silinemedi')
+    }
+  }
+
+  async function fetchReportData(e: FormEvent) {
+    e.preventDefault()
+    setReportMsg(null)
+    setReportLoading(true)
+    setReportRows(null)
+    setReportPage(1)
+    try {
+      const data = await apiFetch<AppointmentResponse[]>(
+        `/api/admin/reports/appointments/data?period=${reportPeriod}&date=${encodeURIComponent(reportDate)}`
+      )
+      setReportRows(data ?? [])
+      setReportMsg('Rapor verileri başarıyla yüklendi.')
+    } catch (err: unknown) {
+      setReportMsg(isApiError(err) ? err.detail : 'Rapor verileri alınamadı')
+      setReportRows([])
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearchQuery.trim().toLowerCase()
+    if (!q) return users
+    return users.filter(u => 
+      u.username.toLowerCase().includes(q) ||
+      (u.doctorFullName && u.doctorFullName.toLowerCase().includes(q)) ||
+      (u.clinicName && u.clinicName.toLowerCase().includes(q)) ||
+      u.roles.some(r => (roleLabels[r as Role] || r).toLowerCase().includes(q))
+    )
+  }, [users, userSearchQuery])
+
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPerPage
+    return filteredUsers.slice(start, start + userPerPage)
+  }, [filteredUsers, userPage])
+
+  const totalUserPages = Math.ceil(filteredUsers.length / userPerPage)
+
+  useEffect(() => {
+    setUserPage(1)
+  }, [userSearchQuery])
+
+  const filteredClinics = useMemo(() => {
+    const q = clinicSearchQuery.trim().toLowerCase()
+    if (!q) return clinics
+    return clinics.filter(c => c.name.toLowerCase().includes(q))
+  }, [clinics, clinicSearchQuery])
+
+  const paginatedClinics = useMemo(() => {
+    const start = (clinicPage - 1) * clinicPerPage
+    return filteredClinics.slice(start, start + clinicPerPage)
+  }, [filteredClinics, clinicPage])
+
+  const totalClinicPages = Math.ceil(filteredClinics.length / clinicPerPage)
+
+  useEffect(() => {
+    setClinicPage(1)
+  }, [clinicSearchQuery])
+
+  const paginatedReportRows = useMemo(() => {
+    if (!reportRows) return []
+    const start = (reportPage - 1) * reportPerPage
+    return reportRows.slice(start, start + reportPerPage)
+  }, [reportRows, reportPage])
+
+  const totalReportPages = reportRows ? Math.ceil(reportRows.length / reportPerPage) : 0
+
   async function downloadReport(e: FormEvent) {
     e.preventDefault()
-    setMsg(null)
+    setReportMsg(null)
     const token = localStorage.getItem('token')
     if (!token) {
-      setMsg('Oturum bulunamadi.')
+      setReportMsg('Oturum bulunamadi.')
       return
     }
     try {
@@ -191,7 +457,7 @@ export function AdminPage() {
       )
       if (!res.ok) {
         const txt = await res.text()
-        setMsg(txt || 'Rapor indirilemedi')
+        setReportMsg(txt || 'Rapor indirilemedi')
         return
       }
       const blob = await res.blob()
@@ -202,9 +468,9 @@ export function AdminPage() {
       a.download = filename
       a.click()
       URL.revokeObjectURL(url)
-      setMsg('PDF rapor indirildi.')
+      setReportMsg('PDF rapor indirildi.')
     } catch {
-      setMsg('Rapor indirilemedi')
+      setReportMsg('Rapor indirilemedi')
     }
   }
 
@@ -278,56 +544,24 @@ export function AdminPage() {
             </div>
           )}
 
-          {msg && <div className="alert subtle">{msg}</div>}
+          {userMsg && <div className="alert subtle">{userMsg}</div>}
           <button className="btn primary" type="submit" disabled={pending}>
             {pending ? 'Kaydediliyor…' : 'Kullanıcı oluştur'}
           </button>
         </form>
 
-        <form className="card stack mt" onSubmit={createClinic}>
-          <h3>Yeni klinik aç</h3>
-          <div className="row wrap">
-            <label className="field flex">
-              <span>Klinik adı</span>
-              <input
-                value={newClinicName}
-                onChange={(e) => setNewClinicName(e.target.value)}
-                placeholder="Örn: Dahiliye"
-                required
-              />
-            </label>
-            <button className="btn secondary" type="submit">
-              Klinik ekle
-            </button>
-          </div>
-        </form>
-
-        <form className="card stack mt" onSubmit={downloadReport}>
-          <h3>Randevu raporu (PDF)</h3>
-          <div className="row wrap">
-            <label className="field">
-              <span>Periyot</span>
-              <select value={reportPeriod} onChange={(e) => setReportPeriod(e.target.value as 'daily' | 'weekly' | 'monthly')}>
-                <option value="daily">Günlük</option>
-                <option value="weekly">Haftalık</option>
-                <option value="monthly">Aylık</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Referans tarih</span>
-              <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
-            </label>
-            <button className="btn secondary" type="submit">
-              PDF indir
-            </button>
-          </div>
-          <div className="muted small">
-            Rapor; randevu, hasta-doktor eşleşmesi, bulgular/tedavi, dokümanlar ve ödeme durumunu içerir.
-          </div>
-        </form>
-
         <div className="card stack mt">
           <h3>Mevcut kullanıcılar</h3>
+          
+          <div className="field">
+            <input
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              placeholder="Kullanıcı adı, hekim adı veya rol ile ara..."
+              style={{ width: '100%' }}
+            />
+          </div>
+
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -339,7 +573,7 @@ export function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {paginatedUsers.map((u) => (
                   <tr key={u.id}>
                     <td>
                       {editingId === u.id ? (
@@ -430,10 +664,333 @@ export function AdminPage() {
                     </td>
                   </tr>
                 ))}
+                {paginatedUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="muted" style={{ textAlign: 'center', padding: '1.5rem' }}>
+                      Aranan kriterlere uygun kullanıcı bulunamadı.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
+
+          {totalUserPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={userPage === 1}
+                onClick={() => setUserPage(prev => Math.max(1, prev - 1))}
+              >
+                ◀ Önceki
+              </button>
+              <span className="muted small">
+                Sayfa <strong>{userPage}</strong> / {totalUserPages}
+              </span>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={userPage === totalUserPages}
+                onClick={() => setUserPage(prev => Math.min(totalUserPages, prev + 1))}
+              >
+                Sonraki ▶
+              </button>
+            </div>
+          )}
         </div>
+
+        <form className="card stack mt" onSubmit={createClinic}>
+          <h3>Yeni klinik aç</h3>
+          <div className="row wrap">
+            <label className="field flex">
+              <span>Klinik adı</span>
+              <input
+                value={newClinicName}
+                onChange={(e) => setNewClinicName(e.target.value)}
+                placeholder="Örn: Dahiliye"
+                required
+              />
+            </label>
+            <button className="btn secondary" type="submit">
+              Klinik ekle
+            </button>
+          </div>
+          {clinicMsg && <div className="alert subtle">{clinicMsg}</div>}
+        </form>
+
+        <div className="card stack mt">
+          <h3>Mevcut Klinikler</h3>
+          <p className="muted small">
+            Sistemde aktif olan tüm klinikleri listeleyebilir, isimlerini güncelleyebilir veya hekim ataması olmayan klinikleri silebilirsiniz.
+          </p>
+          <div className="field">
+            <input
+              value={clinicSearchQuery}
+              onChange={(e) => setClinicSearchQuery(e.target.value)}
+              placeholder="Poliklinik adı ile ara..."
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Poliklinik Adı</th>
+                  <th>Hekim Sayısı</th>
+                  <th>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedClinics.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      {editingClinicId === c.id ? (
+                        <input
+                          value={editClinicName}
+                          onChange={(e) => setEditClinicName(e.target.value)}
+                          style={{ width: '100%' }}
+                          required
+                        />
+                      ) : (
+                        c.name
+                      )}
+                    </td>
+                    <td>
+                      <span className="pill subtle" style={{ fontSize: '0.8rem' }}>
+                        {c.doctorCount ?? 0} Hekim
+                      </span>
+                    </td>
+                    <td className="row wrap">
+                      {editingClinicId === c.id ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn tiny primary"
+                            onClick={() => void saveClinicEdit(c.id)}
+                          >
+                            Kaydet
+                          </button>
+                          <button
+                            type="button"
+                            className="btn tiny ghost"
+                            onClick={cancelClinicEdit}
+                          >
+                            Vazgeç
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className="btn tiny ghost"
+                            onClick={() => startClinicEdit(c)}
+                          >
+                            Düzenle
+                          </button>
+                          {c.doctorCount && c.doctorCount > 0 ? (
+                            <button
+                              type="button"
+                              className="btn tiny disabled"
+                              disabled
+                              title="Hekim tanımlı klinik silinemez"
+                              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                            >
+                              Sil
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn tiny"
+                              onClick={() => void deleteClinic(c.id, c.name)}
+                            >
+                              Sil
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {paginatedClinics.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '1.5rem' }}>
+                      Aranan kriterlere uygun klinik bulunamadı.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalClinicPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={clinicPage === 1}
+                onClick={() => setClinicPage(prev => Math.max(1, prev - 1))}
+              >
+                ◀ Önceki
+              </button>
+              <span className="muted small">
+                Sayfa <strong>{clinicPage}</strong> / {totalClinicPages}
+              </span>
+              <button
+                className="btn tiny secondary"
+                type="button"
+                disabled={clinicPage === totalClinicPages}
+                onClick={() => setClinicPage(prev => Math.min(totalClinicPages, prev + 1))}
+              >
+                Sonraki ▶
+              </button>
+            </div>
+          )}
+        </div>
+
+        <form className="card stack mt" onSubmit={fetchReportData}>
+          <h3>Randevu Raporlama & Analiz Paneli</h3>
+          <p className="muted small" style={{ margin: 0 }}>
+            Seçtiğiniz dönem ve tarihe göre randevu kayıtlarını, muayene durumlarını ve ödeme dökümlerini inceleyebilir veya PDF olarak indirebilirsiniz.
+          </p>
+          <div className="row wrap" style={{ alignItems: 'flex-end', gap: '1rem' }}>
+            <label className="field" style={{ width: '160px' }}>
+              <span>Periyot</span>
+              <select value={reportPeriod} onChange={(e) => setReportPeriod(e.target.value as 'daily' | 'weekly' | 'monthly')}>
+                <option value="daily">Günlük</option>
+                <option value="weekly">Haftalık</option>
+                <option value="monthly">Aylık</option>
+              </select>
+            </label>
+            <label className="field" style={{ width: '220px' }}>
+              <span>Referans Tarih</span>
+              <input type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
+            </label>
+            <div className="row" style={{ gap: '0.5rem', flex: 1, minWidth: '280px' }}>
+              <button className="btn primary flex" type="submit">
+                Rapor Oluştur
+              </button>
+              <button className="btn secondary flex" type="button" onClick={downloadReport}>
+                PDF İndir
+              </button>
+            </div>
+          </div>
+          {reportMsg && <div className="alert subtle">{reportMsg}</div>}
+        </form>
+
+        {reportLoading && (
+          <div className="card mt" style={{ padding: '3rem', textAlign: 'center', color: 'var(--muted)', background: '#ffffff', borderRadius: '20px', border: '1.5px solid #e2e8f0' }}>
+            Rapor verileri getiriliyor, lütfen bekleyin...
+          </div>
+        )}
+
+        {!reportLoading && reportRows !== null && (
+          <div className="card stack mt" style={{ borderLeft: '4px solid var(--brand)', background: '#ffffff', borderColor: 'var(--brand)' }}>
+            <div className="row spread align-center">
+              <h3 style={{ margin: 0 }}>Randevu Raporu Sonuçları</h3>
+              <span className="pill ok" style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                Toplam {reportRows.length} Aktif Kayıt
+              </span>
+            </div>
+            
+            {reportRows.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted)', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                Seçilen kriterlere uygun herhangi bir aktif randevu kayayı bulunamadı.
+              </div>
+            ) : (
+              <>
+                <p className="muted small" style={{ margin: 0 }}>
+                  Seçilen dönemdeki randevu listesi aşağıdadır. İptal edilmiş randevular rapor dışında tutulmuştur.
+                </p>
+                <div className="table-wrap" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Randevu No</th>
+                        <th>Tarih/Saat</th>
+                        <th>Hasta (T.C.)</th>
+                        <th>Hekim (Poliklinik)</th>
+                        <th>Muayene Durumu</th>
+                        <th>Ödeme Durumu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedReportRows.map((row) => (
+                        <tr key={row.id}>
+                          <td style={{ fontWeight: 600 }}>#{row.id}</td>
+                          <td>{new Date(row.startAt).toLocaleString('tr-TR')}</td>
+                          <td>
+                            <strong>{row.patientName}</strong> <br />
+                            <span className="small muted">TC: {row.patientTc}</span>
+                          </td>
+                          <td>
+                            <strong>{row.doctorName}</strong> <br />
+                            <span className="small muted">{row.clinicName}</span>
+                          </td>
+                          <td>
+                            <span
+                              className={`pill ${
+                                row.status === 'SCHEDULED'
+                                  ? 'ok'
+                                  : row.status === 'COMPLETED'
+                                  ? 'subtle'
+                                  : 'warn'
+                              }`}
+                            >
+                              {row.status === 'SCHEDULED'
+                                ? 'Muayene Bekliyor'
+                                : row.status === 'COMPLETED'
+                                ? 'Muayene Edildi'
+                                : row.status === 'CANCELLED'
+                                ? 'İptal Edildi'
+                                : 'Gelmedi'}
+                            </span>
+                          </td>
+                          <td>
+                            {row.paid ? (
+                              <span className="pill ok" style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}>✓ Ödendi</span>
+                            ) : (
+                              <span className="pill subtle" style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem' }}>Ödenmedi</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalReportPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                    <button
+                      className="btn tiny secondary"
+                      type="button"
+                      disabled={reportPage === 1}
+                      onClick={() => setReportPage(prev => Math.max(1, prev - 1))}
+                    >
+                      ◀ Önceki
+                    </button>
+                    <span className="muted small">
+                      Sayfa <strong>{reportPage}</strong> / {totalReportPages}
+                    </span>
+                    <button
+                      className="btn tiny secondary"
+                      type="button"
+                      disabled={reportPage === totalReportPages}
+                      onClick={() => setReportPage(prev => Math.min(totalReportPages, prev + 1))}
+                    >
+                      Sonraki ▶
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+
+        {/* Patients List and Search section for Admins moved under User Management */}
+        <PatientSearchCard />
       </div>
     </RequireRole>
   )

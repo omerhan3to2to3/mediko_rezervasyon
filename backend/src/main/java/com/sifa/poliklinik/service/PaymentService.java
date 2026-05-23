@@ -4,6 +4,7 @@ import com.sifa.poliklinik.domain.BillingLine;
 import com.sifa.poliklinik.domain.Payment;
 import com.sifa.poliklinik.domain.PaymentMethod;
 import com.sifa.poliklinik.domain.VisitRecord;
+import com.sifa.poliklinik.repository.AppointmentRepository;
 import com.sifa.poliklinik.repository.BillingLineRepository;
 import com.sifa.poliklinik.repository.PaymentRepository;
 import com.sifa.poliklinik.repository.VisitRecordRepository;
@@ -23,16 +24,19 @@ public class PaymentService {
     private final BillingLineRepository billingLineRepository;
     private final PaymentRepository paymentRepository;
     private final InsuranceMockService insuranceMockService;
+    private final AppointmentRepository appointmentRepository;
 
     public PaymentService(
             VisitRecordRepository visitRecordRepository,
             BillingLineRepository billingLineRepository,
             PaymentRepository paymentRepository,
-            InsuranceMockService insuranceMockService) {
+            InsuranceMockService insuranceMockService,
+            AppointmentRepository appointmentRepository) {
         this.visitRecordRepository = visitRecordRepository;
         this.billingLineRepository = billingLineRepository;
         this.paymentRepository = paymentRepository;
         this.insuranceMockService = insuranceMockService;
+        this.appointmentRepository = appointmentRepository;
     }
 
     @Transactional
@@ -40,7 +44,16 @@ public class PaymentService {
         VisitRecord visit =
                 visitRecordRepository
                         .findByAppointmentId(appointmentId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Önce muayene kaydı oluşturulmalı"));
+                        .orElseGet(() -> {
+                            var appt = appointmentRepository.findById(appointmentId)
+                                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Randevu bulunamadı"));
+                            VisitRecord v = new VisitRecord();
+                            v.setAppointment(appt);
+                            v.setDoctor(appt.getDoctor());
+                            v.setDiagnosisNotes("");
+                            v.setTreatmentNotes("");
+                            return visitRecordRepository.save(v);
+                        });
         return collect(visit.getId(), tcKimlikForInsuranceQuery, method);
     }
 

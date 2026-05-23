@@ -77,6 +77,23 @@ public class AvailabilityService {
                 suggestions.add(new AlternativeDateDto(d, freeSlots));
             }
         }
+
+        // Eğer ilk range'de (örn 14 gün) hiç alternatif bulunamadıysa, arama aralığını 60 güne genişletelim:
+        if (suggestions.isEmpty() && range < 60) {
+            for (int offset = range + 1; offset <= 60 && suggestions.size() < maxSuggestions; offset++) {
+                LocalDate d = fromDate.plusDays(offset);
+                if (!isBusinessDay(d)) {
+                    continue;
+                }
+                long freeSlots =
+                        availabilityForClinic(clinicId, d).stream()
+                                .mapToLong(x -> x.slots().size())
+                                .sum();
+                if (freeSlots > 0) {
+                    suggestions.add(new AlternativeDateDto(d, freeSlots));
+                }
+            }
+        }
         return suggestions;
     }
 

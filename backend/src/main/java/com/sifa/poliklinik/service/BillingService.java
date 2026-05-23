@@ -3,6 +3,7 @@ package com.sifa.poliklinik.service;
 import com.sifa.poliklinik.domain.BillingLine;
 import com.sifa.poliklinik.domain.ServiceCatalog;
 import com.sifa.poliklinik.domain.VisitRecord;
+import com.sifa.poliklinik.repository.AppointmentRepository;
 import com.sifa.poliklinik.repository.BillingLineRepository;
 import com.sifa.poliklinik.repository.PaymentRepository;
 import com.sifa.poliklinik.repository.ServiceCatalogRepository;
@@ -23,16 +24,19 @@ public class BillingService {
     private final ServiceCatalogRepository serviceCatalogRepository;
     private final BillingLineRepository billingLineRepository;
     private final PaymentRepository paymentRepository;
+    private final AppointmentRepository appointmentRepository;
 
     public BillingService(
             VisitRecordRepository visitRecordRepository,
             ServiceCatalogRepository serviceCatalogRepository,
             BillingLineRepository billingLineRepository,
-            PaymentRepository paymentRepository) {
+            PaymentRepository paymentRepository,
+            AppointmentRepository appointmentRepository) {
         this.visitRecordRepository = visitRecordRepository;
         this.serviceCatalogRepository = serviceCatalogRepository;
         this.billingLineRepository = billingLineRepository;
         this.paymentRepository = paymentRepository;
+        this.appointmentRepository = appointmentRepository;
     }
 
     @Transactional
@@ -40,7 +44,16 @@ public class BillingService {
         VisitRecord visit =
                 visitRecordRepository
                         .findByAppointmentId(appointmentId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Önce muayene kaydı oluşturulmalı"));
+                        .orElseGet(() -> {
+                            var appt = appointmentRepository.findById(appointmentId)
+                                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Randevu bulunamadı"));
+                            VisitRecord v = new VisitRecord();
+                            v.setAppointment(appt);
+                            v.setDoctor(appt.getDoctor());
+                            v.setDiagnosisNotes("");
+                            v.setTreatmentNotes("");
+                            return visitRecordRepository.save(v);
+                        });
         return addLine(visit.getId(), serviceCatalogId, quantity);
     }
 
@@ -66,12 +79,21 @@ public class BillingService {
         return billingLineRepository.save(line);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public BillingSummaryDto summarizeByAppointmentId(Long appointmentId) {
         VisitRecord visit =
                 visitRecordRepository
                         .findByAppointmentId(appointmentId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                        .orElseGet(() -> {
+                            var appt = appointmentRepository.findById(appointmentId)
+                                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Randevu bulunamadı"));
+                            VisitRecord v = new VisitRecord();
+                            v.setAppointment(appt);
+                            v.setDoctor(appt.getDoctor());
+                            v.setDiagnosisNotes("");
+                            v.setTreatmentNotes("");
+                            return visitRecordRepository.save(v);
+                        });
         return summarize(visit.getId());
     }
 
@@ -97,6 +119,17 @@ public class BillingService {
                                                 l.getUnitPriceSnapshot().multiply(BigDecimal.valueOf(l.getQuantity()))))
                         .toList();
         boolean paid = paymentRepository.existsByVisitId(visitId);
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        BigDecimal netAmount = gross;
+        String paymentMethod = null;
+        if (paid) {
+            var paymentOpt = paymentRepository.findByVisitId(visitId);
+            if (paymentOpt.isPresent()) {
+                discountAmount = paymentOpt.get().getDiscountAmount();
+                netAmount = paymentOpt.get().getNetAmount();
+                paymentMethod = paymentOpt.get().getMethod().name();
+            }
+        }
         var patient = visit.getAppointment().getPatient();
         return new BillingSummaryDto(
                 visitId,
@@ -106,6 +139,21 @@ public class BillingService {
                 patient.getFirstName() + " " + patient.getLastName(),
                 gross,
                 dtos,
-                paid);
+                paid,
+                discountAmount,
+                netAmount,
+                paymentMethod,
+                visit.getDiagnosisNotes(),
+                visit.getTreatmentNotes());
+    }
+
+    @Transactional
+    public void deleteLine(Long lineId) {
+        BillingLine line = billingLineRepository.findById(lineId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fatura kalemi bulunamadı"));
+        if (paymentRepository.existsByVisitId(line.getVisit().getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ödemesi tamamlanmış faturadan kalem silinemez");
+        }
+        billingLineRepository.delete(line);
     }
 }

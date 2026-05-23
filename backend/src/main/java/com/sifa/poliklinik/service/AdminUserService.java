@@ -7,6 +7,7 @@ import com.sifa.poliklinik.domain.Role;
 import com.sifa.poliklinik.repository.AppUserRepository;
 import com.sifa.poliklinik.repository.ClinicRepository;
 import com.sifa.poliklinik.repository.DoctorRepository;
+import com.sifa.poliklinik.repository.PatientRepository;
 import com.sifa.poliklinik.web.dto.AdminCreateClinicRequest;
 import com.sifa.poliklinik.web.dto.AdminCreateUserRequest;
 import com.sifa.poliklinik.web.dto.AdminUpdateUserRequest;
@@ -26,16 +27,19 @@ public class AdminUserService {
     private final AppUserRepository appUserRepository;
     private final DoctorRepository doctorRepository;
     private final ClinicRepository clinicRepository;
+    private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminUserService(
             AppUserRepository appUserRepository,
             DoctorRepository doctorRepository,
             ClinicRepository clinicRepository,
+            PatientRepository patientRepository,
             PasswordEncoder passwordEncoder) {
         this.appUserRepository = appUserRepository;
         this.doctorRepository = doctorRepository;
         this.clinicRepository = clinicRepository;
+        this.patientRepository = patientRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -118,6 +122,7 @@ public class AdminUserService {
                             doctor.setActive(false);
                             doctorRepository.save(doctor);
                         });
+        patientRepository.clearCreatedByForUser(userId);
         appUserRepository.delete(user);
     }
 
@@ -132,6 +137,29 @@ public class AdminUserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu isimde klinik zaten var");
         }
     }
+
+    @Transactional
+    public Clinic updateClinic(Long id, AdminCreateClinicRequest request) {
+        Clinic clinic = clinicRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Klinik bulunamadı"));
+        clinic.setName(request.name().trim());
+        try {
+            return clinicRepository.save(clinic);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu isimde klinik zaten var");
+        }
+    }
+
+    @Transactional
+    public void deleteClinic(Long id) {
+        Clinic clinic = clinicRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Klinik bulunamadı"));
+        if (doctorRepository.existsByClinicId(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bu kliniğe bağlı hekim(ler) bulunduğundan silinemez.");
+        }
+        clinicRepository.delete(clinic);
+    }
+
 
     private static AdminUserResponseDto map(AppUser user, Doctor doctor) {
         var roleNames = user.getRoles().stream().map(Role::name).collect(Collectors.toSet());

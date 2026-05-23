@@ -48,4 +48,19 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @EntityGraph(attributePaths = {"patient", "doctor", "doctor.clinic"})
     List<Appointment> findByStartAtBetweenOrderByStartAtAsc(Instant start, Instant end);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "doctor.clinic"})
+    List<Appointment> findByPatient_TcKimlikAndStartAtBetweenOrderByStartAtAsc(
+            String tcKimlik, Instant start, Instant end);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "doctor.clinic"})
+    List<Appointment> findByStartAtBetweenOrderByIdDesc(Instant start, Instant end);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "doctor.clinic"})
+    List<Appointment> findByPatient_TcKimlikAndStartAtBetweenOrderByIdDesc(
+            String tcKimlik, Instant start, Instant end);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "doctor.clinic"})
+    List<Appointment> findByPatient_TcKimlikOrderByStartAtDesc(String tcKimlik);
 }
+

@@ -11,4 +11,9 @@ public record BillingSummaryDto(
         String patientFullName,
         BigDecimal grossTotal,
         List<BillingLineResponseDto> lines,
-        boolean paid) {}
+        boolean paid,
+        BigDecimal discountAmount,
+        BigDecimal netAmount,
+        String paymentMethod,
+        String diagnosisNotes,
+        String treatmentNotes) {}

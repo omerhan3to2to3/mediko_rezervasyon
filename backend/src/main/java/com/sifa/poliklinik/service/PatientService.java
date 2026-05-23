@@ -6,6 +6,7 @@ import com.sifa.poliklinik.repository.AppointmentRepository;
 import com.sifa.poliklinik.repository.AppUserRepository;
 import com.sifa.poliklinik.repository.PatientRepository;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,6 +37,12 @@ public class PatientService {
     public Patient create(String tcKimlik, String firstName, String lastName, String phone, String email, Authentication auth) {
         if (patientRepository.existsByTcKimlik(tcKimlik)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu TC ile hasta zaten kayıtlı");
+        }
+        if (phone != null && !phone.isBlank() && patientRepository.existsByPhone(phone.trim())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu telefon numarası ile kayıtlı bir hasta zaten var");
+        }
+        if (email != null && !email.isBlank() && patientRepository.existsByEmail(email.trim())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu e-posta adresi ile kayıtlı bir hasta zaten var");
         }
         AppUser creator =
                 appUserRepository.findByUsername(auth.getName()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
@@ -85,13 +92,13 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     public List<Patient> search(String q, Authentication auth) {
-        if (q == null || q.isBlank()) {
-            return List.of();
-        }
-        String term = q.trim();
+        String term = (q == null) ? "" : q.trim();
         if (hasRole(auth, "ROLE_DOCTOR")) {
             var doctor = doctorContextService.requireDoctor(auth);
             return patientRepository.searchForDoctor(doctor.getId(), term);
+        }
+        if (term.isEmpty()) {
+            return patientRepository.findAll();
         }
         return patientRepository.search(term);
     }
@@ -108,6 +115,18 @@ public class PatientService {
             var doctor = doctorContextService.requireDoctor(auth);
             if (!appointmentRepository.existsByPatient_IdAndDoctor_Id(id, doctor.getId())) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu hasta için size ait randevu bulunmuyor");
+            }
+        }
+        if (phone != null && !phone.isBlank()) {
+            Optional<Patient> existingPhone = patientRepository.findByPhone(phone.trim());
+            if (existingPhone.isPresent() && !existingPhone.get().getId().equals(id)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu telefon numarası başka bir hastaya ait");
+            }
+        }
+        if (email != null && !email.isBlank()) {
+            Optional<Patient> existingEmail = patientRepository.findByEmail(email.trim());
+            if (existingEmail.isPresent() && !existingEmail.get().getId().equals(id)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu e-posta adresi başka bir hastaya ait");
             }
         }
         p.setFirstName(firstName);

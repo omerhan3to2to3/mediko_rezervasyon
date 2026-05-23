@@ -74,15 +74,27 @@ public class AdminController {
     @PostMapping("/clinics")
     public ClinicResponseDto createClinic(@Valid @RequestBody AdminCreateClinicRequest request) {
         var c = adminUserService.createClinic(request);
-        return new ClinicResponseDto(c.getId(), c.getName(), c.isActive());
+        return new ClinicResponseDto(c.getId(), c.getName(), c.isActive(), 0L);
     }
 
     @GetMapping("/clinics")
     public List<ClinicResponseDto> clinics() {
         return clinicRepository.findByActiveTrueOrderByNameAsc().stream()
-                .map(c -> new ClinicResponseDto(c.getId(), c.getName(), c.isActive()))
+                .map(c -> new ClinicResponseDto(c.getId(), c.getName(), c.isActive(), doctorRepository.countByClinicId(c.getId())))
                 .toList();
     }
+
+    @PatchMapping("/clinics/{id}")
+    public ClinicResponseDto updateClinic(@PathVariable Long id, @Valid @RequestBody AdminCreateClinicRequest request) {
+        var c = adminUserService.updateClinic(id, request);
+        return new ClinicResponseDto(c.getId(), c.getName(), c.isActive(), doctorRepository.countByClinicId(c.getId()));
+    }
+
+    @DeleteMapping("/clinics/{id}")
+    public void deleteClinic(@PathVariable Long id) {
+        adminUserService.deleteClinic(id);
+    }
+
 
     @GetMapping("/doctors")
     public List<DoctorResponseDto> doctorsByClinic(@RequestParam Long clinicId) {
@@ -114,5 +126,18 @@ public class AdminController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .body(data);
+    }
+
+    @GetMapping("/reports/appointments/data")
+    public List<com.sifa.poliklinik.web.dto.AppointmentResponseDto> appointmentReportData(
+            @RequestParam String period,
+            @RequestParam java.time.LocalDate date) {
+        AdminReportService.Period parsed;
+        try {
+            parsed = AdminReportService.Period.valueOf(period.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Period daily, weekly veya monthly olmalidir");
+        }
+        return adminReportService.appointmentReportData(parsed, date);
     }
 }

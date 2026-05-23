@@ -32,7 +32,7 @@ export async function apiFetchWithoutAuth<T>(path: string, options: RequestInit 
   if (hasBody && typeof options.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-  const res = await fetch(`${BASE}${path}`, { ...options, headers })
+  const res = await fetch(`${BASE}${path}`, { cache: 'no-store', ...options, headers })
   const text = await res.text()
   let parsed: unknown = null
   if (text) {
@@ -65,6 +65,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   }
 
   const res = await fetch(`${BASE}${path}`, {
+    cache: 'no-store',
     ...options,
     headers,
   })
@@ -85,6 +86,13 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       detail = String((parsed as ProblemBody).detail)
     } else if (typeof parsed === 'string') {
       detail = parsed
+    }
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('auth_user')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     }
     throw new ApiError(res.status, detail)
   }

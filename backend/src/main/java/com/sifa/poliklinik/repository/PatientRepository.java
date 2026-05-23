@@ -36,4 +36,17 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
             ORDER BY p.lastName, p.firstName
             """)
     List<Patient> searchForDoctor(@Param("doctorId") Long doctorId, @Param("q") String q);
+
+    boolean existsByPhone(String phone);
+
+    boolean existsByEmail(String email);
+
+    Optional<Patient> findByPhone(String phone);
+
+    Optional<Patient> findByEmail(String email);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Patient p SET p.createdBy = null WHERE p.createdBy.id = :userId")
+    void clearCreatedByForUser(@Param("userId") Long userId);
 }
+

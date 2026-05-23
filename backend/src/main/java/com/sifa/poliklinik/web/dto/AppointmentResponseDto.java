@@ -7,10 +7,14 @@ public record AppointmentResponseDto(
         Long id,
         Long patientId,
         String patientName,
+        String patientTc,
         Long doctorId,
         String doctorName,
         Long clinicId,
         String clinicName,
         Instant startAt,
         Instant endAt,
-        AppointmentStatus status) {}
+        AppointmentStatus status,
+        Long visitId,
+        Boolean paid) {}
+

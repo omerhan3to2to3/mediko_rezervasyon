@@ -69,26 +69,16 @@ public class VisitService {
 
     @Transactional(readOnly = true)
     public VisitRecord get(Long visitId, Authentication auth) {
-        Doctor doctor = doctorContextService.requireDoctor(auth);
-        VisitRecord v =
-                visitRecordRepository.findFetchedById(visitId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (!v.getDoctor().getId().equals(doctor.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-        return v;
+        doctorContextService.requireDoctor(auth);
+        return visitRecordRepository.findFetchedById(visitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public VisitRecord getByAppointment(Long appointmentId, Authentication auth) {
-        Doctor doctor = doctorContextService.requireDoctor(auth);
-        VisitRecord v =
-                visitRecordRepository
-                        .findByAppointmentId(appointmentId)
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        if (!v.getAppointment().getDoctor().getId().equals(doctor.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-        return v;
+        doctorContextService.requireDoctor(auth);
+        return visitRecordRepository.findByAppointmentId(appointmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
     @Transactional
@@ -113,5 +103,11 @@ public class VisitService {
     public List<ClinicalDocument> listDocuments(Long visitId, Authentication auth) {
         get(visitId, auth);
         return clinicalDocumentRepository.findByVisitIdOrderByCreatedAtAsc(visitId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<VisitRecord> getPatientVisits(Long patientId, Authentication auth) {
+        doctorContextService.requireDoctor(auth);
+        return visitRecordRepository.findByAppointment_Patient_IdOrderByAppointment_StartAtDesc(patientId);
     }
 }

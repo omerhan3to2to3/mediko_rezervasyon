@@ -1,7 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { isApiError } from '../api/http'
 import { useAuth, type Role } from '../auth/AuthContext'
 
 function defaultHome(roles: Role[]): string {
@@ -38,7 +37,7 @@ export function LoginPage() {
       const session = await login(username.trim(), password)
       nav(defaultHome(session.roles), { replace: true })
     } catch (err: unknown) {
-      setError(isApiError(err) ? err.detail : 'Giriş başarısız')
+      setError('Kullanıcı adı veya şifre yanlış.')
     } finally {
       setPending(false)
     }

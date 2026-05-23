@@ -1,3 +1,15 @@
 package com.sifa.poliklinik.web.dto;
 
-public record VisitResponseDto(Long id, Long appointmentId, Long doctorId, String diagnosisNotes, String treatmentNotes) {}
+import java.time.Instant;
+
+public record VisitResponseDto(
+        Long id,
+        Long appointmentId,
+        Long doctorId,
+        String doctorName,
+        String clinicName,
+        Instant visitDate,
+        String diagnosisNotes,
+        String treatmentNotes
+) {}
+

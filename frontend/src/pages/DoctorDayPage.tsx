@@ -55,11 +55,25 @@ export function DoctorDayPage() {
                     <span className="muted small">(ID {a.patientId})</span>
                   </td>
                   <td>
-                    <span className="pill subtle">{a.status}</span>
+                    <span
+                      className={`pill ${
+                        a.status === 'SCHEDULED'
+                          ? 'ok'
+                          : a.status === 'COMPLETED'
+                          ? 'subtle'
+                          : 'warn'
+                      }`}
+                    >
+                      {a.status === 'SCHEDULED'
+                        ? 'Muayene Bekliyor'
+                        : a.status === 'COMPLETED'
+                        ? 'Muayene Edildi'
+                        : 'İptal Edildi'}
+                    </span>
                   </td>
                   <td className="right">
                     <Link className="btn tiny primary" to={`/app/doktor/ziyaret/${a.id}`}>
-                      Muayene
+                      Muayene Ekranı
                     </Link>
                   </td>
                 </tr>

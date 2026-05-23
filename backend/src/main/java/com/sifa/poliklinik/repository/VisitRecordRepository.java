@@ -1,6 +1,8 @@
 package com.sifa.poliklinik.repository;
 
+import com.sifa.poliklinik.domain.Appointment;
 import com.sifa.poliklinik.domain.VisitRecord;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +17,10 @@ public interface VisitRecordRepository extends JpaRepository<VisitRecord, Long> 
     @EntityGraph(attributePaths = {"appointment", "appointment.patient", "appointment.doctor", "doctor"})
     @Query("SELECT v FROM VisitRecord v WHERE v.id = :id")
     Optional<VisitRecord> findFetchedById(@Param("id") Long id);
+
+    List<VisitRecord> findByAppointmentIn(List<Appointment> appointments);
+
+    @EntityGraph(attributePaths = {"appointment", "appointment.patient", "appointment.doctor", "appointment.doctor.clinic", "doctor"})
+    List<VisitRecord> findByAppointment_Patient_IdOrderByAppointment_StartAtDesc(Long patientId);
 }
+

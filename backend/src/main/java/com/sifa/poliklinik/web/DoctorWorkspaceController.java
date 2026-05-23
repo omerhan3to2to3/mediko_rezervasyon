@@ -22,6 +22,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sifa.poliklinik.service.BillingService;
+import com.sifa.poliklinik.web.dto.BillingLineAddRequest;
+import com.sifa.poliklinik.web.dto.BillingLineResponseDto;
+import org.springframework.web.bind.annotation.DeleteMapping;
+
 @RestController
 @RequestMapping("/api/doctor")
 public class DoctorWorkspaceController {
@@ -29,14 +34,17 @@ public class DoctorWorkspaceController {
     private final DoctorContextService doctorContextService;
     private final DoctorAppointmentQueryService doctorAppointmentQueryService;
     private final VisitService visitService;
+    private final BillingService billingService;
 
     public DoctorWorkspaceController(
             DoctorContextService doctorContextService,
             DoctorAppointmentQueryService doctorAppointmentQueryService,
-            VisitService visitService) {
+            VisitService visitService,
+            BillingService billingService) {
         this.doctorContextService = doctorContextService;
         this.doctorAppointmentQueryService = doctorAppointmentQueryService;
         this.visitService = visitService;
+        this.billingService = billingService;
     }
 
     @GetMapping("/appointments")
@@ -79,4 +87,37 @@ public class DoctorWorkspaceController {
     public List<ClinicalDocumentResponseDto> listDocs(@PathVariable Long visitId, Authentication auth) {
         return visitService.listDocuments(visitId, auth).stream().map(DtoMapper::document).toList();
     }
+
+    @GetMapping("/patients/{patientId}/visits")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public List<VisitResponseDto> getPatientVisits(@PathVariable Long patientId, Authentication auth) {
+        return visitService.getPatientVisits(patientId, auth).stream().map(DtoMapper::visit).toList();
+    }
+
+    @PostMapping("/appointments/{appointmentId}/billing-lines")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public List<BillingLineResponseDto> addBillingLine(
+            @PathVariable Long appointmentId,
+            @Valid @RequestBody BillingLineAddRequest req) {
+        billingService.addLineForAppointment(appointmentId, req.serviceCatalogId(), req.quantity());
+        var summary = billingService.summarizeByAppointmentId(appointmentId);
+        return summary.lines();
+    }
+
+    @GetMapping("/appointments/{appointmentId}/billing-lines")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public List<BillingLineResponseDto> getBillingLines(@PathVariable Long appointmentId) {
+        var summary = billingService.summarizeByAppointmentId(appointmentId);
+        return summary.lines();
+    }
+
+    @DeleteMapping("/appointments/{appointmentId}/billing-lines/{lineId}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public List<BillingLineResponseDto> deleteBillingLine(
+            @PathVariable Long appointmentId, @PathVariable Long lineId) {
+        billingService.deleteLine(lineId);
+        var summary = billingService.summarizeByAppointmentId(appointmentId);
+        return summary.lines();
+    }
 }
+
