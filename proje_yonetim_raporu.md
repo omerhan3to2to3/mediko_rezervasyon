@@ -56,16 +56,25 @@ Proje geliştirme sürecinde karşılaşılabilecek olası riskler, olasılık/e
 
 ## 4. Proje İş-Zaman Çizelgesi (Zaman Planı)
 
-Bazı PDF ve Markdown render motorlarının Mermaid `gantt` modülünü desteklememesi veya hatalı yorumlaması riski nedeniyle, projenin 12 haftalık zaman çizelgesi hem garantili çalışan bir akış şeması (Mermaid Flowchart) hem de detaylı bir takvim tablosu olarak sunulmuştur.
+Bazı PDF ve Markdown render motorlarının Mermaid `gantt` modülünü desteklememesi veya hatalı yorumlaması riski nedeniyle, projenin 12 haftalık zaman çizelgesi hem garantili çalışan bir Gantt şeması hem de detaylı bir takvim tablosu olarak sunulmuştur.
 
-### A. Proje Süreç Akış Şeması
+### A. Proje Takvimi Gantt Şeması
 ```mermaid
-graph LR
-    A["Planlama & Analiz<br/>(1-15 Mart)"] --> B["Veritabanı Tasarımı<br/>(16-22 Mart)"]
-    B --> C["Backend Geliştirme<br/>(23 Mart - 10 Nisan)"]
-    C --> D["Frontend Geliştirme<br/>(11-28 Nisan)"]
-    D --> E["Birim Sınama & Entegrasyon<br/>(29 Nisan - 10 Mayıs)"]
-    E --> F["Dokümantasyon & Teslim<br/>(11-22 Mayıs)"]
+gantt
+    title Proje Is-Zaman Plani
+    dateFormat YYYY-MM-DD
+    section Planlama & Analiz
+    Proje Kapsam Analizi :active, a1, 2026-03-01, 10d
+    Kisitlarin Belirlenmesi :a2, after a1, 5d
+    section Tasarim
+    Veritabani Tasarimi :t1, 2026-03-16, 7d
+    UML Diyagram Cizimi :t2, after t1, 8d
+    section Gelistirme
+    Backend Kodlama :k1, 2026-03-31, 20d
+    React Front-end :k2, 2026-04-15, 18d
+    Test & Entegrasyon :k3, after k1, 10d
+    section Teslim
+    Rapor & Sunum :e1, 2026-05-15, 8d
 ```
 
 ### B. Proje İş Paketi Takvimi

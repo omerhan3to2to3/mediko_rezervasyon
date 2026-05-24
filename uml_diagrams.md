@@ -9,24 +9,46 @@ Bu doküman, Şifa Polikliniği Bilgi Sistemi (ŞPYS) projesinin nesneye yöneli
 Sistemde yer alan 5 dış aktörün (Kayıt Görevlisi, Randevu Görevlisi, Doktor, Veznedar ve Sistem Yöneticisi) sistem sınırları içindeki temel işlevlerle etkileşimi aşağıda şematize edilmiştir.
 
 ```mermaid
-graph TD
-    KG["Kayit Görevlisi"] --> UC1["Hasta Kaydi Olusturma ve Arama"]
-    KG --> UC2["Hasta Bilgilerini Guncelleme"]
-    
-    RG["Randevu Görevlisi"] --> UC3["Randevu Sorgulama ve MHRS Grid Goruntuleme"]
-    RG --> UC4["Randevu Alma"]
-    RG --> UC5["Randevu Iptal Etme"]
-    
-    D["Doktor (Hekim)"] --> UC6["Hasta Muayenesi (Tani/Tedavi Notu Girisi)"]
-    D --> UC7["Gecmis Muayene Akisi ve Belge Goruntuleme"]
-    D --> UC8["Klinik Belge Olusturma (Recete, Rapor vb.)"]
-    
-    V["Veznedar (Kasiyer)"] --> UC9["Fatura Kalemi Ekleme/Silme ve Hesaplama"]
-    V --> UC10["Odeme Tahsilati ve SGK Sigorta Sorgulama"]
-    
-    A["Sistem Yoneticisi (Admin)"] --> UC11["Kullanici Yonetimi"]
-    A --> UC12["Klinik Yonetimi"]
-    A --> UC13["Raporlama"]
+graph LR
+    KG[Kayit Görevlisi]
+    RG[Randevu Görevlisi]
+    D[Doktor / Hekim]
+    V[Veznedar / Kasiyer]
+    A[Sistem Yoneticisi / Admin]
+
+    subgraph "Sifa Poliklinigi Bilgi Sistemi (Sistem Siniri)"
+        UC1([Hasta Kaydi Islemleri])
+        UC2([Hasta Bilgisi Guncelleme])
+        UC3([Randevu Sorgulama])
+        UC4([Randevu Rezervasyonu])
+        UC5([Randevu Iptali])
+        UC6([Muayene Kaydi & Tani Girisi])
+        UC7([Klinik Belge Yukleme])
+        UC8([Gecmis Muayene Sorgulama])
+        UC9([Fatura Detaylandirma])
+        UC10([Odeme Tahsilati])
+        UC11([Kullanici Yonetimi])
+        UC12([Klinik Yonetimi])
+        UC13([Sistem Raporlari])
+    end
+
+    KG --> UC1
+    KG --> UC2
+
+    RG --> UC3
+    RG --> UC4
+    RG --> UC5
+
+    D --> UC6
+    D --> UC7
+    D --> UC8
+
+    V --> UC9
+    V --> UC10
+
+    A --> UC11
+    A --> UC12
+    A --> UC13
 ```
 
 ### Kullanım Senaryosu Metinleri ve Operasyon Sözleşmeleri (Use Case Contracts)
@@ -329,38 +351,37 @@ stateDiagram-v2
 Hastanın polikliniğe girişinden işlemlerini tamamlayıp ayrılmasına kadar süren uçtan uca iş akış şemasıdır.
 
 ```mermaid
-partition "Kayit Birimi"
-    activity PatientArrival [Hasta Poliklinige Gelir]
-    activity CheckReg [T.C. Kimlik Sorgulaması Yapilir]
-    activity CreatePatient [Yeni Hasta Kaydi Yapilir]
-end
-
-partition "Randevu Birimi"
-    activity ChooseSlot [Tarih ve Hekim MHRS Gridinden Secilir]
-    activity SaveAppt [Randevu Kaydedilir]
-end
-
-partition "Poliklinik Muayene Birimi"
-    activity WaitQueue [Hasta Muayene Sirasini Bekler]
-    activity Examine [Hekim Muayene Eder]
-    activity WriteNotes [Tani ve Tedavi Notlari Sisteme Girilir]
-    activity UploadDoc [Ilac Recetesi veya Rapor Eklenir]
-end
-
-partition "Vezne ve Kasa"
-    activity AddBillingItems [Veznedar Tedavi Hizmetlerini Secer]
-    activity CheckInsurance [SGK/Sigorta Kapsami Sorgulanir]
-    activity CollectMoney [Odeme Alinir ve Fatura Kapatilir]
-end
-
-%% Akis Baglantilari
 graph TD
+    subgraph "Kayit Birimi"
+        PatientArrival[Hasta Poliklinige Gelir]
+        CheckReg{T.C. Kimlik Sorgulamasi Yapilir}
+        CreatePatient[Yeni Hasta Kaydi Yapilir]
+    end
+
+    subgraph "Randevu Birimi"
+        ChooseSlot[Tarih ve Hekim MHRS Gridinden Secilir]
+        SaveAppt[Randevu Kaydedilir]
+    end
+
+    subgraph "Poliklinik Muayene Birimi"
+        WaitQueue[Hasta Muayene Sirasini Bekler]
+        Examine[Hekim Muayene Eder]
+        WriteNotes[Tani ve Tedavi Notlari Sisteme Girilir]
+        UploadDoc[Ilac Recetesi veya Rapor Eklenir]
+    end
+
+    subgraph "Vezne ve Kasa Birimi"
+        AddBillingItems[Veznedar Tedavi Hizmetlerini Secer]
+        CheckInsurance[SGK/Sigorta Kapsami Sorgulanir]
+        CalculateTotal[Indirimli Tutar Hesaplanir]
+        CollectMoney[Odeme Alinir ve Fatura Kapatilir]
+    end
+
     Start([Baslangic]) --> PatientArrival
     PatientArrival --> CheckReg
-    CheckReg --> IsRegistered{Hasta Kayitli Mi?}
-    IsRegistered -- Hayir --> CreatePatient
+    CheckReg -->|Hasta Kayitli Degil| CreatePatient
+    CheckReg -->|Hasta Kayitli| ChooseSlot
     CreatePatient --> ChooseSlot
-    IsRegistered -- Evet --> ChooseSlot
     ChooseSlot --> SaveAppt
     SaveAppt --> WaitQueue
     WaitQueue --> Examine
@@ -368,7 +389,7 @@ graph TD
     WriteNotes --> UploadDoc
     UploadDoc --> AddBillingItems
     AddBillingItems --> CheckInsurance
-    CheckInsurance --> CalculateTotal[Indirimli Tutar Hesaplanir]
+    CheckInsurance --> CalculateTotal
     CalculateTotal --> CollectMoney
     CollectMoney --> End([Hasta Poliklinikten Ayrilir])
 ```
