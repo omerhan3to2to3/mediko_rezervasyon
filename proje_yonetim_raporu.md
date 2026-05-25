@@ -147,13 +147,18 @@ Proje ekibi 4 kişiden oluşmakta olup, görev ve sorumluluk paylaşımları aş
 
 ## 8. Birim Testi Sınama Raporu (JUnit & Mockito)
 
-Ödev kuralı gereğince projenin iş mantığı katmanını sınamak amacıyla tasarlanan 21 birim testinin, bunları yazan öğrencilere göre dağılımı ve test içerikleri aşağıdaki tabloda sunulmuştur:
+Ödev kuralı gereğince projenin iş mantığı katmanını sınamak amacıyla tasarlanan ve **her grup üyesinin kişi başı en az 2 adet birim test sınıfından sorumlu olduğu** toplam 42 birim testinin, bunları yazan öğrencilere göre dağılımı ve test içerikleri aşağıdaki tabloda sunulmuştur:
 
 | Test Sınıfı | Sınanan Metotlar | Tasarlayan Öğrenci | Açıklama / Ne Test Ediliyor? |
 | :--- | :--- | :--- | :--- |
 | **InsuranceMockServiceTest** | `quote()`, `discountAmount()` | **İsa Koçan** (22011056) | T.C. son hanesine göre `%0`, `%25`, `%50`, `%75` SGK indirim oranlarının doğruluğu ve matematiksel brüt-net indirim hesabı test ediliyor. |
+| **PaymentServiceTest** | `collect()`, `collectForAppointment()` | **İsa Koçan** (22011056) | Muayene faturası ödeme tahsilatı, brüt/net hesaplamaları ve mükerrer ödeme engelleme denetimleri doğrulanıyor. |
 | **PatientServiceTest** | `create()`, `get()`, `getByTc()` | **Ömerhan Sancak** (22011002) | Mükerrer T.C., telefon veya e-posta ile hasta kaydı yapılmak istendiğinde oluşan `ResponseStatusException` (CONFLICT) durumları test ediliyor. |
+| **AppointmentServiceTest** | `create()`, `cancel()` | **Ömerhan Sancak** (22011002) | Randevu planlama, çakışma kontrolleri (zaman dilimi doluluğu) ve randevu iptal süreçleri sınanıyor. |
+| **BillingServiceTest** | `addLine()`, `deleteLine()` | **Emre Erçin** (22011095) | Fatura kalemleri ekleme, silme, adet doğrulamaları ve ödeme durumu kısıtları test ediliyor. |
+| **AvailabilityServiceTest** | `availabilityForClinic()`, `alternativeDates()` | **Emre Erçin** (22011095) | Klinik bazında 30'ar dakikalık randevu slotlarının listelenmesi, hafta sonu kontrolü ve alternatif tarih öneri mekanizması sınanıyor. |
 | **AdminUserServiceTest** | `createClinic()`, `deleteClinic()` | **Yılmaz Akkaya** (22011020) | Altında hekim tanımlı olan kliniğin silinmesinin engellenmesi kısıtı ve adminin kendi hesabını silememesi kuralları mock nesnelerle sınanıyor. |
+| **VisitServiceTest** | `upsertForAppointment()`, `addDocument()` | **Yılmaz Akkaya** (22011020) | Hekim muayene tanı/tedavi girişi, randevu durum geçişleri ve klinik belge (reçete, sevk vb.) ekleme mantığı test ediliyor. |
 
 ### Detaylı Test Çalıştırma Çıktısı (Maven Test Logu):
 Testlerin dockerizasyon ortamında `mvn test` komutuyla çalıştırılması sonucu alınan resmi terminal çıktısı aşağıda sunulmuştur. Tüm testler başarıyla geçmiştir.
@@ -163,11 +168,21 @@ Testlerin dockerizasyon ortamında `mvn test` komutuyla çalıştırılması son
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running com.sifa.poliklinik.service.AdminUserServiceTest
-[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.705 s -- in com.sifa.poliklinik.service.AdminUserServiceTest
-[INFO] Running com.sifa.poliklinik.service.PatientServiceTest
-[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.096 s -- in com.sifa.poliklinik.service.PatientServiceTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.332 s -- in com.sifa.poliklinik.service.AdminUserServiceTest
+[INFO] Running com.sifa.poliklinik.service.AppointmentServiceTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.379 s -- in com.sifa.poliklinik.service.AppointmentServiceTest
+[INFO] Running com.sifa.poliklinik.service.AvailabilityServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.092 s -- in com.sifa.poliklinik.service.AvailabilityServiceTest
+[INFO] Running com.sifa.poliklinik.service.BillingServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.217 s -- in com.sifa.poliklinik.service.BillingServiceTest
 [INFO] Running com.sifa.poliklinik.service.InsuranceMockServiceTest
-[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.sifa.poliklinik.service.InsuranceMockServiceTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in com.sifa.poliklinik.service.InsuranceMockServiceTest
+[INFO] Running com.sifa.poliklinik.service.PatientServiceTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.074 s -- in com.sifa.poliklinik.service.PatientServiceTest
+[INFO] Running com.sifa.poliklinik.service.PaymentServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.sifa.poliklinik.service.PaymentServiceTest
+[INFO] Running com.sifa.poliklinik.service.VisitServiceTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.090 s -- in com.sifa.poliklinik.service.VisitServiceTest
 [INFO] 
 [INFO] Results:
 [INFO] 

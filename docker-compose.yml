@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: sifa_poliklinik
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: orhanhan1.2
     ports:
       - "5432:5432"
     volumes:
@@ -19,7 +19,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=sifa_poliklinik
       - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - DB_PASSWORD=orhanhan1.2
     depends_on:
       - db
 

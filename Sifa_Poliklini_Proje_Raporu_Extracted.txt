@@ -1,0 +1,673 @@
+
+
+ŞİFA POLİKLİNİĞİ BİLGİ SİSTEMİ
+Yazılım Mühendisliği Proje Raporu
+
+Proje Konusu: Konu 1 – Şifa Polikliniği Bilgi Sistemi
+Teslim Tarihi: 25 Mayıs 2026, Pazartesi 23:59
+Ders: Yazılım Mühendisliği
+Teknoloji Yığını: Spring Boot 3 (Java 21) + React 18 (TypeScript) + PostgreSQL
+
+
+EKİP ÜYELERİ
+İsa Koçan  (22011056)  –  Proje Yöneticisi & Backend Lideri
+Ömerhan Sancak  (22011002)  –  DB Sorumlusu & Backend Geliştirici
+Emre Erçin  (22011095)  –  UI/UX Tasarımcısı & Frontend Geliştirici
+Yılmaz Akkaya  (22011020)  –  Test Sorumlusu & Frontend Geliştirici
+
+İÇİNDEKİLER
+1.  Proje Planı
+  1.1  Proje Alan Tanımı ve Kapsamı
+  1.2  Fizibilite Çalışması
+  1.3  Kabul Kriterleri ve Kısıtlar
+  1.4  Proje İş-Zaman Çizelgesi (Gantt)
+  1.5  Ekip Organizasyonu ve Görev Dağılımı
+  1.6  Risk Tablosu
+2.  İsteklerin Modellenmesi
+  2.1  Kullanım Senaryosu (Use Case) Diyagramı
+  2.2  Kullanım Senaryosu Metinleri
+  2.3  Operasyon Sözleşmeleri (Contracts)
+  2.4  Sınıf Düzeyinde İzlenebilirlik Tablosu
+3.  Nesneye Dayalı Modelleme
+  3.1  Alan Sınıfı (Domain Class) Diyagramı
+4.  Nesneye Dayalı Tasarım
+  4.1  Tasarım Sınıf (Design Class) Diyagramı
+  4.2  Tasarım Prensipleri ve Kalıpları
+  4.3  Sıralama (Sequence) Diyagramları
+  4.4  Durum (State) Diyagramı
+  4.5  Etkinlik (Activity) Diyagramı
+5.  Birim Testi Sınamaları
+  5.1  Test Özet Tablosu
+  5.2  InsuranceMockServiceTest – İsa Koçan
+  5.3  PatientServiceTest – Ömerhan Sancak
+  5.4  AdminUserServiceTest – Yılmaz Akkaya
+  5.5  Test Çalıştırma Sonuçları (Maven Logu)
+
+1. PROJE PLANI
+1.1 Proje Alan Tanımı ve Kapsamı
+Şifa Polikliniği Bilgi Sistemi (ŞPYS), yeni kurulan Şifa Polikliniği'nin hasta başvurusundan ödeme ve taburcu işlemlerine kadar geçen tüm süreçleri dijitalleştirmeyi ve merkezi bir veritabanı üzerinden yönetmeyi amaçlayan bütünleşik bir otomasyon yazılımıdır. Sistem, aşağıda listelenen beş ana modülden oluşmaktadır:
+• Hasta Kayıt Modülü: Yeni hastaların T.C. Kimlik numarası kontrolüyle sisteme kaydedilmesi, kayıtlı hastalar arasında isim, soyisim veya T.C. Kimlik No ile arama yapılması ve hasta demografik bilgilerinin güncellenmesi.
+• Randevu Yönetim Modülü (MHRS Grid): Seçilen poliklinik ve doktor bazında 30 dakikalık zaman dilimlerine bölünmüş uygunluk tablosunun görüntülenmesi; randevu alma, sorgulama ve iptal mekanizmalarının işletilmesi. Çakışma önleme için veritabanı benzersiz kısıtı uygulanmaktadır.
+• Doktor Muayene Modülü: Muayene sırası bekleyen hastaların listelenmesi; hekim tarafından hasta geçmiş vizite kayıtlarının incelenmesi; tanı/teşhis ve tedavi notlarının girilmesi; reçete, rapor ve sevk belgesi gibi klinik dökümanların sisteme yüklenmesi.
+• Vezne ve Fatura Modülü: Muayenesi tamamlanan hastaların fatura kalemlerinin hizmet kataloğuna bağlı olarak oluşturulması; T.C. Kimlik numarasına göre SGK/özel sigorta indirim oranlarının mock servis üzerinden sorgulanması; nakit veya kart ile ödeme tahsilatının yapılması.
+• Admin Yönetim Paneli: Sisteme yeni kullanıcı (Doktor, Veznedar, Kayıt Personeli vb.) eklenmesi/güncellenmesi/pasife alınması; poliklinik ve klinik tanımlamalarının yapılması; randevu ve ödeme raporlarının tarih aralığı filtreleriyle listelenerek PDF olarak indirilmesi.
+1.2 Fizibilite Çalışması
+Teknik Yapılabilirlik
+Projede Spring Boot 3 (Java 21) ve React 18 (TypeScript) gibi endüstri standardı, geniş topluluk desteğine sahip teknolojiler seçilmiştir. Katmanlı mimari (Controller → Service → Repository) ve JPA/PostgreSQL kullanımı sayesinde veri tutarlılığı en üst düzeyde sağlanmaktadır. Docker ile konteynerizasyon, farklı ortamlarda (geliştirici makinesi, test sunucusu, üretim) tutarlı çalışma garantisi sunmaktadır.
+Ekonomik Yapılabilirlik
+Sistem tamamen açık kaynak teknolojiler (PostgreSQL, Java, React, Docker) üzerine inşa edildiğinden lisans maliyeti sıfırdır. Bulut sunucularında düşük kaynak tüketimiyle çalışabilecek şekilde optimize edilmiş olup başlangıç altyapı maliyeti minimal düzeydedir.
+Operasyonel Yapılabilirlik
+Arayüz, MHRS benzeri alışılagelmiş bir tasarım dilinde hazırlandığından kayıt görevlisi, doktor ve veznedar personelinin sistemi ekstra eğitim almadan kullanabilmesi hedeflenmiştir. Web tabanlı yapısı sayesinde ayrı bir kurulum gerektirmemekte, modern bir tarayıcı yeterli olmaktadır.
+1.3 Kabul Kriterleri ve Kısıtlar
+Kabul Kriterleri
+Kriter No
+Başlık
+Açıklama
+AC-1
+Rol Tabanlı Yetkilendirme (RBAC)
+Sistemde ADMIN, REGISTRATION_CLERK, APPOINTMENT_CLERK, DOCTOR ve CASHIER olmak üzere 5 rol bulunmalı; her rol yalnızca yetkisi dahilindeki ekranlara erişebilmelidir.
+AC-2
+Randevu Kural Seti
+Randevular 09:00-17:00 saatleri arasında, 30 dakikalık periyotlarda alınabilmeli; 12:00-13:00 öğle arası ve hafta sonu günleri randevu verilememelidir.
+AC-3
+Hekim-Klinik Bütünlüğü
+Bir klinik ancak altında aktif doktor bulunmadığı takdirde silinebilir; bu kısıt geçmiş muayene kayıtlarının tutarlılığını korumak için zorunludur.
+AC-4
+Güvenlik
+Kullanıcı şifreleri veritabanında BCrypt ile şifrelenmiş olarak saklanmalı; API istekleri JWT (JSON Web Token) ile korunmalıdır.
+AC-5
+Ödeme Yöntemi Kısıtı
+Sistem yalnızca Nakit (CASH) ve Kredi Kartı (CARD) ödeme yöntemlerini kabul etmeli; başka bir ödeme türüne izin verilmemelidir.
+
+Kısıtlar ve Varsayımlar
+Kısıt No
+Başlık
+Açıklama
+K-1
+Tek Lokasyon Varsayımı
+Poliklinik tek bir fiziksel merkezde hizmet vermektedir. Çoklu şube veya tele-tıp entegrasyonu kapsam dışıdır.
+K-2
+Mock Sigorta Sorgulama
+SGK veya özel sigorta şirketlerinin canlı API'leri yerine T.C. Kimlik numarasının son hanesine göre çalışan bir stub/mock servis kullanılmaktadır. Canlı entegrasyon ileriki sürümlere bırakılmıştır.
+K-3
+Zaman Dilimi
+Tüm randevu ve döküman zaman damgaları Türkiye yerel saati (Europe/Istanbul, UTC+3) üzerinden işlenir.
+K-4
+Sevk Belgesi
+Başka kuruma sevk kâğıdı özelliği veri modelinde (REFERRAL türü) tanımlı olmakla birlikte, ön-arayüz implementasyonu kapsam dışı bırakılmıştır; ileriki sürümde eklenecektir.
+
+1.4 Proje İş-Zaman Çizelgesi (Gantt Diyagramı)
+Projenin 12 haftalık (01 Mart – 22 Mayıs 2026) geliştirme takvimi aşağıdaki tabloda detaylandırılmıştır. Her iş paketi için başlangıç/bitiş tarihleri, süre, sorumlu ekip üyeleri ve teslimat çıktıları listelenmiştir.
+İş Paketi
+Açıklama
+Başlangıç
+Bitiş
+Süre
+Sorumlu
+Çıktı
+İP-1
+Gereksinim Analizi & Planlama
+01.03.2026
+15.03.2026
+14 Gün
+Tüm Ekip
+Kapsam dokümanı, kabul kriterleri, risk tablosu
+İP-2
+Veritabanı Şema Tasarımı
+16.03.2026
+22.03.2026
+7 Gün
+Ömerhan, İsa
+PostgreSQL DDL scripti, Flyway V1 migration
+İP-3
+Backend API Geliştirme
+23.03.2026
+10.04.2026
+19 Gün
+İsa, Ömerhan
+REST controller'lar, servis & repo katmanı, JWT güvenlik
+İP-4
+Frontend Geliştirme
+11.04.2026
+28.04.2026
+18 Gün
+Emre, Yılmaz
+React sayfaları, MHRS Grid, API entegrasyonu
+İP-5
+Birim Testleri & Entegrasyon
+29.04.2026
+10.05.2026
+12 Gün
+Yılmaz, İsa, Ömerhan
+JUnit/Mockito test senaryoları, hata ayıklama
+İP-6
+Dokümantasyon & Teslim
+11.05.2026
+22.05.2026
+12 Gün
+Tüm Ekip
+Proje raporu, UML diyagramları, teslim paketi
+
+Gantt Diyagramı – Görsel Takvim (ASCII Temsili):
+İş Paketi / Hafta     H1  H2  H3  H4  H5  H6  H7  H8  H9  H10 H11 H12─────────────────────────────────────────────────────────────────────────İP-1  Analiz           ████████İP-2  DB Tasarım               ████İP-3  Backend                      ████████████İP-4  Frontend                                  ████████████İP-5  Test                                                  ████████İP-6  Dokümantasyon                                                 ████████
+1.5 Ekip Organizasyonu ve Görev Dağılımı
+Proje ekibi 4 kişiden oluşmaktadır. Ekip organizasyon hiyerarşisi ve her üyenin proje içindeki sorumlulukları aşağıda listelenmiştir:
+Ad Soyad
+Öğrenci No
+Rol
+Sorumluluklar
+İsa Koçan
+22011056
+Proje YöneticisiBackend Lideri
+InsuranceMockService, JWT güvenlik mimarisi, JUnit test altyapısı kurulumu ve koordinasyon
+Ömerhan Sancak
+22011002
+DB SorumlusuBackend Geliştirici
+PostgreSQL şema tasarımı, Flyway migrationları, PatientService, PatientController
+Emre Erçin
+22011095
+UI/UX TasarımcısıFrontend Geliştirici
+Hasta kayıt formu, MHRS uyumlu randevu ızgara ekranı, Doktor muayene ekranları
+Yılmaz Akkaya
+22011020
+Test SorumlusuFrontend Geliştirici
+Vezne & ödeme ekranları, Admin paneli, AdminUserServiceTest birim testleri
+
+Ekip Organizasyon Şeması:
+                    ┌──────────────────────┐                    │    PROJE YÖNETİCİSİ  │                    │     İsa Koçan        │                    └──────────┬───────────┘          ┌───────────────────┼───────────────────┐          ▼                   ▼                   ▼┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐│ DB Sorumlusu &  │  │ UI/UX & Frontend│  │ Test Sorumlusu &││ Backend Geliş.  │  │    Geliştirici  │  │ Frontend Geliş. ││ Ömerhan Sancak  │  │  Emre Erçin     │  │ Yılmaz Akkaya   │└─────────────────┘  └─────────────────┘  └─────────────────┘
+1.6 Risk Tablosu
+Proje geliştirme sürecinde karşılaşılabilecek riskler, olasılık/etki dereceleri ve eylem planları aşağıda listelenmiştir:
+No
+Risk Tanımı
+Tür
+Olasılık
+Etki
+Eylem Planı
+R1
+Eş zamanlı randevu çakışması (Race Condition)
+Teknik
+Orta
+Yüksek
+Veritabanında uk_doctor_slot benzersiz kısıtı ile mükerrer kayıt engellenir
+R2
+Kullanıcı silindiğinde vizite verisi kaybı
+Teknik
+Düşük
+Çok Yüksek
+Soft-delete: active=false ile arşivleme; fiziksel silme yapılmaz
+R3
+Veritabanı bağlantı kopması / veri kaybı
+Proje
+Düşük
+Çok Yüksek
+Dockerize PostgreSQL için günlük otomatik yedekleme scripti
+R4
+API sorgularında performans kaybı
+Teknik
+Orta
+Orta
+Listeleme ekranlarında server-side sayfalama (Spring Page<T>) zorunlu kılınır
+R5
+Mock sigorta servisinde ağ gecikmesi
+Teknik
+Orta
+Düşük
+Hatalı TC durumunda sigorta indirimi atlanarak brüt tutar tahsil edilir
+R6
+Hekim ekranı modal UI kayması
+Teknik
+Orta
+Düşük
+React Portal yapısıyla modal DOM hiyerarşisinin en üstüne taşınır
+R7
+Randevu iptalinde FK kısıt hatası
+Teknik
+Orta
+Yüksek
+ON DELETE CASCADE ile bağlı vizite, döküman ve fatura silinir
+R8
+Ekip üyesi gecikme riski
+Proje
+Orta
+Orta
+Haftalık Scrum ile görev durumları güncellenir, kritik yol takip edilir
+
+
+2. İSTEKLERİN MODELLENMESİ
+2.1 Kullanım Senaryosu (Use Case) Diyagramı
+Sistemdeki 5 aktör ve her aktörün etkileşimde bulunduğu kullanım senaryoları aşağıda metin tabanlı gösterim ile verilmiştir. Mermaid/UML diyagramı violet.umleditor aracıyla ayrıca çizilmiştir.
+╔══════════════════════════════════════════════════════════════════════════╗║                      ŞİFA POLİKLİNİĞİ BİLGİ SİSTEMİ                    ║║                                                                          ║║  [Kayıt Görevlisi]──►(UC1: Hasta Kaydı Oluşturma ve Arama)              ║║                  ──►(UC2: Hasta Bilgilerini Güncelleme)                  ║║                                                                          ║║  [Randevu Görevlisi]──►(UC3: Randevu Sorgulama / MHRS Grid Görüntüleme) ║║                    ──►(UC4: Randevu Alma)                                ║║                    ──►(UC5: Randevu İptal Etme)                          ║║                                                                          ║║  [Doktor (Hekim)]──►(UC6: Hasta Muayenesi – Tanı/Tedavi Notu)           ║║                 ──►(UC7: Geçmiş Muayene Akışı Görüntüleme)              ║║                 ──►(UC8: Klinik Belge Oluşturma – Reçete/Rapor)         ║║                                                                          ║║  [Veznedar]──►(UC9:  Fatura Kalemi Ekleme/Silme ve Hesaplama)           ║║           ──►(UC10: Ödeme Tahsilatı ve SGK Sigorta Sorgulama)           ║║                                                                          ║║  [Sistem Yöneticisi]──►(UC11: Kullanıcı Yönetimi)                       ║║                    ──►(UC12: Klinik Yönetimi)                            ║║                    ──►(UC13: Raporlama)                                  ║╚══════════════════════════════════════════════════════════════════════════╝
+2.2 Kullanım Senaryosu Metinleri
+UC4: Randevu Alma
+Aktör
+Randevu Görevlisi
+Tetikleyici
+Hasta telefonla polikliniği ve istediği tarihi görevliye bildirir.
+Ön Koşullar
+• Hasta sistemde kayıtlı olmalıdır.• Seçilen tarih iş günü olmalıdır.
+Ana Akış
+1. Görevli sistemde hekim ve tarihi seçer.2. Sistem, seçilen tarihte o klinikte boş zaman dilimi olup olmadığını sorgular.3. Müsait slot görüntülenir (MHRS Grid).4. Görevli uygun dilime tıklar ve onaylar.5. Sistem SCHEDULED durumunda yeni Appointment kaydı oluşturur.6. Sistem görevliye ve (isteğe bağlı) hastaya onay mesajı iletir.
+Alternatif Akış
+A1: Uygun doktor yoksa sistem alternatif tarih önerir.A2: Hasta sistemde kayıtlı değilse görevli hastayı kayıt modülüne yönlendirir.
+Son Koşul
+SCHEDULED durumunda Appointment nesnesi veritabanına kaydedilmiştir.
+
+UC10: Ödeme Tahsilatı ve SGK Sigorta Sorgulama
+Aktör
+Veznedar
+Tetikleyici
+Muayenesini tamamlayan hasta veznede ödeme yapmak için bekler.
+Ön Koşullar
+• İlgili VisitRecord mevcuttur.• Ziyaret için daha önce ödeme tahsil edilmemiştir.• En az bir BillingLine kalemi eklenmiştir.
+Ana Akış
+1. Veznedar sistemde tamamlanan muayeneleri listeler.2. Hasta satırına tıklayarak tedavi hizmetlerini seçer ve fatura oluşturur.3. Sistem hastanın T.C. Kimlik numarasını InsuranceMockService'e gönderir.4. Servis SGK kapsamını (0/25/50/75) döndürür.5. Sistem brüt tutar üzerinden indirimi hesaplayarak net tutarı gösterir.6. Veznedar ödeme yöntemini (Nakit/Kart) seçer ve onaylar.7. Sistem Payment kaydını oluşturur ve fişi ekranda gösterir.
+Alternatif Akış
+A1: Sigorta sorgusunda hata durumunda brüt tutar üzerinden tahsilat yapılır.A2: Fatura kalemi yoksa "önce hizmet ekleyiniz" uyarısı verilir.
+Son Koşul
+Payment kaydı oluşturulmuş; randevunun mali durumu KAPALI olarak güncellenir.
+
+UC6: Hasta Muayenesi (Tanı/Tedavi Notu Girişi)
+Aktör
+Doktor
+Tetikleyici
+Hasta randevu saatinde poliklinikte hazır beklemektedir.
+Ön Koşullar
+• SCHEDULED durumunda geçerli bir Appointment mevcuttur.• Doktor kendi kliniğine bağlı ve aktif durumdadır.
+Ana Akış
+1. Doktor sistemde muayene listesini görüntüler.2. Hasta adına tıklayarak geçmiş vizite kayıtlarını inceler.3. Tanı notlarını ve tedavi notlarını sisteme girer.4. İsteğe bağlı: reçete ve/veya rapor belgesi ekler.5. Muayeneyi tamamlar; Appointment durumu COMPLETED'e güncellenir.
+Alternatif Akış
+A1: Hasta daha önce aynı klinike gelmişse geçmiş kayıtlar otomatik listelenir.
+Son Koşul
+VisitRecord nesnesi oluşturulmuş; Appointment durumu COMPLETED.
+
+2.3 Operasyon Sözleşmeleri (Contracts)
+Sözleşme 1: createAppointment(patientId, doctorId, startAt)
+Sorumlu Sınıf: AppointmentService
+Ön Koşullar:
+T.C. Kimlik numarasına sahip hasta sistemde kayıtlıdır (patientRepository.findById çalışır).
+Hekim sistemde aktif durumdadır (doctorRepository.findByIdAndActiveTrue mevcut).
+Seçilen zaman dilimi başka randevu ile çakışmıyor (uk_doctor_slot kısıtı ihlal edilmiyor).
+Son Koşullar:
+Veritabanında SCHEDULED durumunda yeni Appointment nesnesi oluşturuldu.
+startAt ve endAt (= startAt + 30 dk) zaman damgaları atandı.
+Sözleşme 2: collectPayment(visitId, tcKimlik, method)
+Sorumlu Sınıf: PaymentService
+Ön Koşullar:
+İlgili VisitRecord mevcuttur ve COMPLETED durumundadır.
+Daha önce ödeme tahsil edilmemiştir (paymentRepository.existsByVisitId = false).
+Faturada en az bir geçerli BillingLine kalemi bulunmaktadır.
+Son Koşullar:
+InsuranceMockService.quote() ile TC sorgusu yapıldı ve indirim oranı alındı.
+Net Tutar = Brüt Tutar × (1 – indirimOranı/100) hesaplandı.
+Payment nesnesi oluşturulup (CASH veya CARD) olarak kaydedildi.
+Sözleşme 3: createPatient(tc, firstName, lastName, phone, email)
+Sorumlu Sınıf: PatientService
+Ön Koşullar:
+Verilen T.C. Kimlik numarasına sahip aktif hasta sistemde kayıtlı değildir.
+Telefon numarası (varsa) başka bir hasta kaydında kullanılmamıştır.
+E-posta adresi (varsa) başka bir hasta kaydında kullanılmamıştır.
+Son Koşullar:
+Yeni Patient nesnesi oluşturuldu ve veritabanına kaydedildi.
+createdBy alanına işlemi yapan kullanıcı atandı.
+2.4 Sınıf Düzeyinde İzlenebilirlik Tablosu (Traceability Matrix)
+Yazılım gereksinimleri (G1–G9) ile bu gereksinimleri karşılayan veritabanı entity'leri ve servis sınıfları (B1–B10) arasındaki ilişkiyi gösteren izlenebilirlik tablosudur.
+Sınıf Açıklamaları:
+B1: AppUser / AppUserRepository
+B2: Clinic / ClinicRepository
+B3: Doctor / DoctorRepository
+B4: Patient / PatientRepository / PatientService
+B5: Appointment / AppointmentRepository / AppointmentService
+B6: AvailabilityService
+B7: VisitRecord / VisitRecordRepository / VisitService
+B8: BillingLine / BillingLineRepository / BillingService
+B9: Payment / PaymentRepository / PaymentService
+B10: InsuranceMockService
+G No
+Gereksinim
+B1
+B2
+B3
+B4
+B5
+B6
+B7
+B8
+B9
+B10
+G1
+Dinamik Klinikler (Klinik CRUD)
+
+X
+
+
+
+
+
+
+
+
+G2
+Hekim-Klinik İlişkisi ve 30 Dk Slotlar
+
+X
+X
+
+X
+X
+
+
+
+
+G3
+Kayıt Görevlisi Hasta Kayıt ve Arama
+X
+
+
+X
+
+
+
+
+
+
+G4
+Randevu Alma ve Alternatif Tarih
+
+
+X
+X
+X
+X
+
+
+
+
+G5
+Kayıtsız Hastanın Kayda Aktarılması
+
+
+
+X
+X
+
+
+
+
+
+G6
+Doktor Muayene, Tanı & Belgeler
+
+
+X
+X
+X
+
+X
+
+
+
+G7
+Vezne Fatura Sorgulama ve Kalem Ekleme
+
+
+
+X
+X
+
+X
+X
+X
+
+G8
+SGK Sigorta Sorgulama ve İndirim
+
+
+
+
+
+
+
+
+X
+X
+G9
+Ödeme Yöntemi Sınırı (Nakit/Kart)
+
+
+
+
+
+
+
+
+X
+
+
+
+3. NESNEYE DAYALI MODELLEME
+3.1 Alan Sınıfı (Domain Class) Diyagramı
+Aşağıdaki diyagram, sistemde veritabanında saklanan nesneleri (varlıklar/entities) ve aralarındaki kardinalite ilişkilerini göstermektedir. Her sınıfın önemli nitelikleri listelenmiştir.
+┌─────────────┐       creates 0..*  ┌───────────────────────────────────────┐│   AppUser   │──────────────────►  │             Patient                   ││─────────────│                     │───────────────────────────────────────││ id: Long    │                     │ id: Long                              ││ username    │                     │ tcKimlik: String(11)                  ││ password    │                     │ firstName: String                     ││ role: Role  │                     │ lastName: String                      ││ fullName    │                     │ phone: String                         │└─────────────┘                     │ email: String                         │                                    │ createdAt: Instant                    │┌─────────────┐   has 0..*          └────────────────┬──────────────────────┘│   Clinic    │──────────────────►  ┌────────────────┼────────────────────┐│─────────────│                     │    Doctor      │ books 0..*         ││ id: Long    │                     │────────────────│                    ▼│ name        │                     │ id: Long       │        ┌───────────────────┐│ active: bool│                     │ fullName       │        │    Appointment    │└─────────────┘                     │ active: bool   │        │───────────────────│                                    └────────┬───────┘        │ id: Long          │                                     attends │ 0..*           │ startAt: Instant  │                                             └───────────────►│ endAt: Instant    │                                                              │ status: Enum      │                                                              └────────┬──────────┘                                                                       │ leads to 0..1                                                                       ▼                                              ┌───────────────────────────────────┐                                              │         VisitRecord               │                                              │───────────────────────────────────│                                              │ id: Long                          │                                              │ diagnosisNotes: Text              │                                              │ treatmentNotes: Text              │                                              │ updatedAt: Instant                │                                              └──┬────────────────────────────────┘                                    contains      │                has items │                                      0..*        ▼                  0..*    ▼                               ┌──────────────────────┐  ┌──────────────────────┐                               │  ClinicalDocument    │  │     BillingLine      │                               │──────────────────────│  │──────────────────────│                               │ id: Long             │  │ id: Long             │                               │ type: Enum           │  │ quantity: int        │                               │ (REPORT/PRESCRIPTION │  │ unitPriceSnapshot    │                               │  /REFERRAL)          │  └──────────────────────┘                               │ contentText: Text    │         references ▲                               │ createdAt: Instant   │  ┌──────────────────────┐                               └──────────────────────┘  │   ServiceCatalog     │                                                          │──────────────────────│                                                          │ id: Long             │                                                          │ code: String         │                                                          │ description          │                                                          │ unitPrice: Decimal   │                                                          └──────────────────────┘
+Alan Sınıfı İlişki Özeti:
+Kaynak Sınıf
+Hedef Sınıf
+Kaynak Kard.
+Hedef Kard.
+İlişki Tipi
+Açıklama
+AppUser
+Patient
+1
+0..*
+creates
+Bir kullanıcı birden fazla hasta kaydedebilir
+Clinic
+Doctor
+1
+0..*
+has
+Bir klinikte birden fazla doktor çalışabilir
+Doctor
+Appointment
+1
+0..*
+attends
+Bir doktorun birden fazla randevusu olabilir
+Patient
+Appointment
+1
+0..*
+books
+Bir hastanın birden fazla randevusu olabilir
+Appointment
+VisitRecord
+1
+0..1
+leads to
+Bir randevu en fazla bir vizite kaydına yol açar
+VisitRecord
+ClinicalDocument
+1
+0..*
+contains
+Bir vizitede birden fazla klinik döküman olabilir
+VisitRecord
+BillingLine
+1
+0..*
+has items
+Bir vizitede birden fazla fatura kalemi olabilir
+ServiceCatalog
+BillingLine
+1
+0..*
+references
+Bir hizmet kataloğu kalemi birden fazla fatura kaleminde kullanılabilir
+VisitRecord
+Payment
+1
+0..1
+settled by
+Bir vizite en fazla bir ödeme kaydına sahiptir
+
+
+4. NESNEYE DAYALI TASARIM
+4.1 Tasarım Sınıf (Design Class) Diyagramı
+Tasarım sınıf diyagramı; controller, service ve repository katmanlarını, her sınıfa atanan metot imzalarını ve sınıflar arası bağımlılık yönlerini göstermektedir.
+┌──────────────────────────────┐    ┌───────────────────────────────────┐│     PatientController        │───►│          PatientService            ││──────────────────────────────│    │───────────────────────────────────││+create(dto,auth):Patient     │    │-repo: PatientRepository            ││+search(q,auth):List          │    │+create(tc,name,phone,email):Patient││+update(id,dto,auth):Patient  │    │+get(id):Patient                   │└──────────────────────────────┘    │+search(q):List                    │                                    │+getByTc(tc):Patient               │┌──────────────────────────────┐    └───────────────────────────────────┘│  AppointmentController       │───►┌───────────────────────────────────┐│──────────────────────────────│    │        AppointmentService          ││+create(dto):Appointment      │    │───────────────────────────────────││+list(date,tc):List           │    │-repo: AppointmentRepository       ││+cancel(id):Appointment       │◄───│+create(patId,docId,start):Appt   │└──────────┬───────────────────┘    │+cancel(id):Appointment            │           │                        │+listAppointments(date,tc):List    │           ▼                        └───────────────────────────────────┘┌──────────────────────────────┐│     AvailabilityService      │    ┌───────────────────────────────────┐│──────────────────────────────│    │        BillingController           ││-schedule: ClinicScheduleProps│───►│───────────────────────────────────││+availabilityForClinic():List │    │+addLine(dto):BillingLine          ││+alternativeDates():List      │    │+getSummary(visitId):SummaryDto    │└──────────────────────────────┘    │+deleteLine(lineId):void           │                                    └──────────┬────────────────────────┘                                               ▼                                    ┌───────────────────────────────────┐┌──────────────────────────────┐    │          BillingService            ││    PaymentController         │───►│───────────────────────────────────││──────────────────────────────│    │-lineRepo: BillingLineRepository   ││+collect(dto):Payment         │    │+addLine(visitId,svcId,qty):Line   │└──────────────────────────────┘    │+summarize(visitId):SummaryDto     │           │                        └───────────────────────────────────┘           ▼┌──────────────────────────────┐    ┌───────────────────────────────────┐│      PaymentService          │───►│      InsuranceMockService          ││──────────────────────────────│    │───────────────────────────────────││-payRepo: PaymentRepository   │    │+quote(tc):InsuranceQuote          ││-insurance: InsuranceMock     │    │+discountAmount(gross,rate):Decimal││+collect(visitId,tc,m):Pay    │    └───────────────────────────────────┘└──────────────────────────────┘┌──────────────────────────────┐    ┌───────────────────────────────────┐│      AdminController         │───►│        AdminUserService            ││──────────────────────────────│    │───────────────────────────────────││+createClinic(dto):Clinic     │    │-clinicRepo: ClinicRepository      ││+updateClinic(id,dto):Clinic  │    │+createClinic(dto):Clinic          ││+deleteClinic(id):void        │    │+updateClinic(id,dto):Clinic       ││+getReportData(s,e):List      │    │+deleteClinic(id):void             │└──────────────────────────────┘    └───────────────────────────────────┘
+4.2 Nesneye Dayalı Tasarım Prensipleri ve Kalıpları
+SOLID Prensipleri
+Prensip
+Uygulandığı Yer
+SRP(Tek Sorumluluk)
+PatientService yalnızca hasta CRUD ve doğrulama mantığını yönetir. Uygunluk sorgusu AvailabilityService'e, sigorta hesabı InsuranceMockService'e delege edilmiştir.
+OCP(Açık/Kapalı)
+Clinic entity'si active alanıyla genişletilebilir (ileriki klinikler); ClinicalDocument doc_type ENUM ile yeni belge türleri (REFERRAL) eklemeye açıktır.
+DIP(Bağımlılık Ters.)
+Service sınıfları JPA Repository arayüzlerine bağımlıdır; somut implementasyona değil. Spring'in DI mekanizması ile bağımlılıklar constructor injection yoluyla enjekte edilir.
+
+Uygulanan Tasarım Kalıpları
+Kalıp
+Açıklama & Kullanım Yeri
+MVC (Model-View-Controller)
+Model: JPA Entity sınıfları, View: React/TypeScript SPA, Controller: Spring @RestController
+Repository (Data Access Layer)
+Spring Data JPA Repository arayüzleri veritabanı erişimini soyutlar; AppointmentRepository, PatientRepository vb.
+Strategy (Ödeme Yöntemi)
+Ödeme yöntemi (CASH/CARD) runtime'da seçilir; method alanı PaymentService'e strateji olarak geçilir.
+Stub/Mock (Sigorta Servisi)
+InsuranceMockService gerçek SGK API'si yerine deterministik stub davranışı sunar; üretim ortamında gerçek servis aynı arayüzle değiştirilebilir.
+Low Coupling / High Cohesion (GRASP)
+Her servis yalnızca kendi domain'iyle ilgilenir; sınıflar arası bağımlılıklar arayüzler üzerinden DI ile minimize edilmiştir.
+
+4.3 Tasarım Sıralama (Sequence) Diyagramları
+Sıralama Diyagramı A: Randevu Rezervasyonu Akışı
+Ana senaryo: Randevu Görevlisi müsait slot sorgular ve yeni randevu oluşturur.
+Randevu                React              AppointmentController  AppointmentService  AppointmentRepository  PostgreSQLGörevlisi              (UI)    │                    │                         │                    │                    │                  │    │──Hekim&Tarih seç──►│                         │                    │                    │                  │    │                    │──GET /availability ─────►│                    │                    │                  │    │                    │                         │──listAppointments─►│                    │                  │    │                    │                         │                    │──findBlocking ─────►│                  │    │                    │                         │                    │                    │──SELECT─────────►│    │                    │                         │                    │                    │◄──Dolu Randevular─│    │                    │                         │                    │◄──List<Appointment>─│                  │    │                    │                         │◄──Slot Bilgileri───│                    │                  │    │                    │◄──200 OK (Slot Listesi)─│                    │                    │                  │    │◄──MHRS Grid────────│                         │                    │                    │                  │    │──Boş saate tıkla──►│                         │                    │                    │                  │    │                    │──POST /appointments ────►│                    │                    │                  │    │                    │  (patientId,doctorId,    │──create()─────────►│                    │                  │    │                    │   startAt)               │                    │──save(Appointment)─►│                  │    │                    │                         │                    │                    │──INSERT──────────►│    │                    │                         │                    │                    │◄──Kaydedildi──────│    │                    │                         │◄──Appointment Nss.─│                    │                  │    │                    │◄──201 Created───────────│                    │                    │                  │    │◄──Başarı mesajı────│                         │                    │                    │                  │
+Sıralama Diyagramı B: Fatura Oluşturma ve Ödeme Tahsilatı Akışı
+Alternatif senaryo: Sigorta sorgusunun başarılı olduğu tam akış.
+Veznedar            React(UI)     BillingController  BillingService  PaymentController  PaymentService  InsuranceMock  PostgreSQL   │                    │                │                │                 │                │               │              │   │──Muayeneleri lst──►│                │                │                 │                │               │              │   │                    │──GET /billing─►│                │                 │                │               │              │   │                    │◄──Hasta Listesi│                │                 │                │               │              │   │──Hasta seç, tedavi►│                │                │                 │                │               │              │   │──hizmet ekle       │──POST /lines──►│                │                 │                │               │              │   │                    │               │──addLine()─────►│                 │                │               │              │   │                    │               │                 │──INSERT billing─►►─────────────────────────────────────────────►│   │                    │               │◄──BillingLine───│                 │                │               │              │   │                    │◄──Fatura Güncl│                │                 │                │               │              │   │──Ödeme Tahsil Et──►│                │                │                 │                │               │              │   │   (Nakit/Kart)     │──POST /payment►──────────────────────────────────►│                │               │              │   │                    │               │                │                 │──collect()──────►│               │              │   │                    │               │                │                 │                │──quote(tc)────►│              │   │                    │               │                │                 │                │◄──%50 İndirim─│               │   │                    │               │                │                 │                │──Net hesapla  │               │   │                    │               │                │                 │                │──INSERT payment►─────────────►│   │                    │               │                │                 │◄──Payment DTO──│               │              │   │                    │◄──200 OK──────►────────────────────────────────────│               │               │              │   │◄──Fiş Görünümü─────│               │                │                 │                │               │              │
+4.4 Durum (State) Diyagramı – Randevu Yaşam Döngüsü
+Bir Appointment kaydının sisteme girilmesinden faturalandırılıp ödenmesine kadar olan durum geçişleri aşağıda gösterilmiştir.
+                  ┌─────────────────────────────────────────────────────┐                  │                 RANDEVU YAŞAM DÖNGÜSÜ               │                  └─────────────────────────────────────────────────────┘        [Başlangıç]             │             │ «Randevu Oluşturuldu»             ▼    ┌─────────────────┐    │   SCHEDULED     │◄──────────────────────────────────────────────────┐    │ (Muayene        │                                                   │    │  Bekliyor)      │                                                   │    └────────┬────────┘                                                   │             │                                                            │      ┌──────┴──────┐                                                     │      │             │                                                     │      │ «İptal»     │ «Muayene Tamamlandı»                                │      ▼             ▼                                                     │ ┌──────────┐  ┌──────────┐                                              │ │CANCELLED │  │COMPLETED │                                              │ │          │  │          │                                              │ └──────────┘  └────┬─────┘                                             │      │             │                                                    │      │ «Fiziksel»  │ «Hizmet Ekleme»                                   │      │  «Silme»    ▼                                                   │      │   ┌─────────────────────┐                                       │      │   │  FATURALANABİLİR   │                                       │      │   │  (Fatura Oluşmamış)│                                       │      │   └──────────┬──────────┘                                       │      │              │ «Hizmet Kalemleri Girildi»                       │      │              ▼                                                   │      │   ┌─────────────────────┐                                       │      │   │  FAKTÜRELENDİ      │                                       │      │   │  (Ödeme Bekliyor)  │                                       │      │   └──────────┬──────────┘                                       │      │              │ «Ödeme Tahsilatı»                                 │      │              ▼                                                   │      │   ┌─────────────────────┐                                       │      │   │     ÖDEME ALINDI   │                                       │      │   │   (Dosya Kapalı)   │                                       │      │   └──────────┬──────────┘                                       │      │              │                                                    │      ▼              ▼ [Bitiş]                                           │    [Bitiş]     [Bitiş]                                                  │
+4.5 Etkinlik (Activity) Diyagramı – Hasta Uçtan Uca İş Akışı
+Hastanın polikliniğe girişinden ödeme yapıp ayrılmasına kadar olan uçtan uca iş akışı; birden fazla aktörün (Kayıt Birimi, Randevu Birimi, Muayene ve Vezne) paralel/sıralı katılımıyla gösterilmiştir.
+ [Başlangıç]      │      ▼ Hasta Polikliniğe Gelir      │      ▼ T.C. Kimlik Sorgulaması Yapılır      │      ├─── Kayıtlı Değilse ──────►  Yeni Hasta Kaydı Oluşturulur ──┐      │                                                              │      └─── Zaten Kayıtlıysa ────────────────────────────────────────┤                                                                     │┌────────────────────────────────────────────────────────────────────┘│  [KAYIT BİRİMİ tamamlandı]│▼Tarih ve Hekim MHRS Grid'den Seçilir      │      ├─── Müsait Slot Var mı? ──── Hayır ──► Alternatif Tarih Önerilir ──┐      │                                                                    │      └─── Evet ───────────────────────────────────────────────────────────┤                                                                           │┌──────────────────────────────────────────────────────────────────────────┘│  [RANDEVU BİRİMİ tamamlandı]│▼Randevu Kaydedilir (SCHEDULED)      │      ▼Hasta Muayene Sırasını Bekler      │      ▼Hekim Muayene Eder ──────────► Hasta Geçmiş Kayıtları İncelenir      │      ▼Tanı ve Tedavi Notları Girilir      │      ├─── Reçete Gerekiyor mu? ─── Evet ──► Reçete Belgesi Sisteme Eklenir      │      └─── Rapor Gerekiyor mu?  ─── Evet ──► Rapor Belgesi Sisteme Eklenir      │      ▼Muayene Tamamlandı (COMPLETED)│  [MUAYENE BİRİMİ tamamlandı]│▼Veznedar Tedavi Hizmetlerini Seçer ve Fatura Oluşturur      │      ▼SGK/Sigorta Kapsamı Sorgulanır (InsuranceMockService)      │      ▼İndirimli Net Tutar Hesaplanır      │      ▼Ödeme Alınır (Nakit veya Kart) ──► Makbuz/Fiş Ekranda Gösterilir      │      ▼[Bitiş] – Hasta Poliklinikten Ayrılır
+
+5. BİRİM TESTİ SINAMALARI
+Proje kapsamında iş mantığı katmanını sınamak amacıyla üç test sınıfında toplam 21 birim testi tasarlanmıştır. JUnit 5 ve Mockito kütüphaneleri kullanılmıştır. Aşağıdaki tabloda hangi birim testinin hangi öğrenci tarafından tasarlandığı belirtilmiş; ardından her test sınıfının kaynak kodu ve çalıştırma çıktısı sunulmuştur.
+5.1 Test Özet Tablosu
+Test Sınıfı
+Test Sayısı
+Sınanan Metotlar
+Tasarlayan
+Öğrenci No
+Test Kapsamı
+InsuranceMockServiceTest
+8
+quote(), discountAmount()
+İsa Koçan
+22011056
+SGK kapsam oranı ve brüt-net indirim hesabı doğrulanır
+PatientServiceTest
+7
+create(), get(), getByTc()
+Ömerhan Sancak
+22011002
+Hasta oluşturma, sorgulama ve çakışma durumları test edilir
+AdminUserServiceTest
+6
+createClinic(), deleteClinic(), updateClinic(), delete()
+Yılmaz Akkaya
+22011020
+Klinik CRUD ve admin kısıtları test edilir
+
+5.2 InsuranceMockServiceTest – İsa Koçan (22011056)
+Sigorta kapsam oranı hesaplaması ve indirim tutarı mantığını doğrular.
+Test Senaryoları:
+Test Adı
+Açıklama
+Test Parametreleri
+quote_sonHaneSifir_yuzdeElliKapsam
+TC numarasının son hanesi 0 olan hasta için %50 kapsam oranı döndürülür.
+TC: 12345678900 → son hane 0 % 4 = 0 → %50
+quote_sonHaneBir_yuzdeYirmibesKapsam
+TC numarasının son hanesi 1 olan hasta için %25 kapsam oranı döndürülür.
+TC: 12345678901 → son hane 1 % 4 = 1 → %25
+quote_sonHaneUc_kapsamDisi
+TC numarasının son hanesi 3 olan hasta sigorta kapsamında değildir (%0).
+TC: 12345678903 → son hane 3 % 4 = 3 → %0
+quote_gecersizTc_sifirKapsam
+Geçersiz (sayısal olmayan) TC numarası için %0 ve uyarı mesajı döner.
+TC: "ABCDE"
+quote_nullTc_sifirKapsam
+Null TC numarası için %0 kapsam döner.
+TC: null
+discountAmount_yuzdeElliIndirim
+Brüt 200.00 TL üzerinden %50 indirim uygulanınca 100.00 TL döner.
+gross=200.00, rate=50 → discount=100.00
+discountAmount_sifirOran_sifirIndirim
+Kapsam oranı 0 olduğunda indirim sıfır döner.
+gross=500.00, rate=0 → discount=0
+discountAmount_negatifOran_sifirIndirim
+Negatif kapsam oranında indirim sıfır döner.
+gross=100.00, rate=-10 → discount=0
+
+Kaynak Kodu (InsuranceMockServiceTest.java):
+package com.sifa.poliklinik.service;import static org.junit.jupiter.api.Assertions.*;import java.math.BigDecimal;import org.junit.jupiter.api.BeforeEach;import org.junit.jupiter.api.DisplayName;import org.junit.jupiter.api.Test;/** * @author İsa Koçan (Öğrenci No: 22011056) - Proje Yöneticisi & Backend Lideri */class InsuranceMockServiceTest {    private InsuranceMockService insuranceMockService;    @BeforeEach    void setUp() {        insuranceMockService = new InsuranceMockService();    }    @Test    @DisplayName("TC son hanesi 0 olan hasta için %50 kapsam oranı döner")    void quote_sonHaneSifir_yuzdeElliKapsam() {        var quote = insuranceMockService.quote("12345678900");        assertEquals(50, quote.coverageRatePercent());        assertTrue(quote.message().contains("50"));    }    @Test    @DisplayName("TC son hanesi 1 olan hasta için %25 kapsam oranı döner")    void quote_sonHaneBir_yuzdeYirmibesKapsam() {        var quote = insuranceMockService.quote("12345678901");        assertEquals(25, quote.coverageRatePercent());        assertTrue(quote.message().contains("25"));    }    @Test    @DisplayName("TC son hanesi 3 → sigorta kapsamı dışı (%0)")    void quote_sonHaneUc_kapsamDisi() {        var quote = insuranceMockService.quote("12345678903");        assertEquals(0, quote.coverageRatePercent());        assertTrue(quote.message().contains("bulunamadı"));    }    @Test    @DisplayName("Geçersiz TC → %0 ve uyarı mesajı")    void quote_gecersizTc_sifirKapsam() {        var quote = insuranceMockService.quote("ABCDE");        assertEquals(0, quote.coverageRatePercent());        assertTrue(quote.message().contains("Geçersiz"));    }    @Test    @DisplayName("Null TC → %0 kapsam")    void quote_nullTc_sifirKapsam() {        var quote = insuranceMockService.quote(null);        assertEquals(0, quote.coverageRatePercent());    }    @Test    @DisplayName("Brüt 200.00 TL üzerinden %50 indirim → 100.00 TL")    void discountAmount_yuzdeElliIndirim() {        BigDecimal gross    = new BigDecimal("200.00");        BigDecimal discount = insuranceMockService.discountAmount(gross, 50);        assertEquals(new BigDecimal("100.00"), discount);    }    @Test    @DisplayName("Kapsam 0 → indirim sıfır")    void discountAmount_sifirOran_sifirIndirim() {        BigDecimal discount = insuranceMockService.discountAmount(new BigDecimal("500.00"), 0);        assertEquals(BigDecimal.ZERO, discount);    }    @Test    @DisplayName("Negatif oran → indirim sıfır")    void discountAmount_negatifOran_sifirIndirim() {        BigDecimal discount = insuranceMockService.discountAmount(new BigDecimal("100.00"), -10);        assertEquals(BigDecimal.ZERO, discount);    }}
+5.3 PatientServiceTest – Ömerhan Sancak (22011002)
+Hasta oluşturma, sorgulama ve doğrulama mantığını test eder.
+Test Adı
+Açıklama
+create_basarili
+Benzersiz TC, telefon ve e-posta ile hasta başarıyla oluşturulur.
+create_ayniTc_conflictHatasi
+Aynı TC ile kayıt yapılmak istendiğinde HTTP 409 CONFLICT fırlatılır.
+create_ayniTelefon_conflictHatasi
+Aynı telefon numarasıyla kayıt yapılmak istendiğinde CONFLICT fırlatılır.
+get_varolanHasta_basarili
+Mevcut ID ile hasta başarıyla getirilir.
+get_kayitsizHasta_notFound
+Kayıtsız ID sorgulandığında HTTP 404 NOT_FOUND fırlatılır.
+getByTc_basarili
+T.C. Kimlik numarasıyla hasta başarıyla getirilir.
+getByTc_kayitsiz_notFound
+Kayıtsız TC sorgulandığında HTTP 404 NOT_FOUND fırlatılır.
+
+Kaynak Kodu (PatientServiceTest.java) – Önemli Metodlar:
+package com.sifa.poliklinik.service;import static org.junit.jupiter.api.Assertions.*;import static org.mockito.ArgumentMatchers.any;import static org.mockito.Mockito.*;// ... (import'lar)/** * @author Ömerhan Sancak (Öğrenci No: 22011002) - DB Sorumlusu & Backend Geliştirici */@ExtendWith(MockitoExtension.class)class PatientServiceTest {    @Mock private PatientRepository patientRepository;    @Mock private AppUserRepository appUserRepository;    @Mock private Authentication authentication;    @InjectMocks private PatientService patientService;    @Test    @DisplayName("Yeni hasta başarıyla oluşturulur")    void create_basarili() {        when(patientRepository.existsByTcKimlik("12345678901")).thenReturn(false);        when(patientRepository.existsByPhone("5551234567")).thenReturn(false);        when(patientRepository.existsByEmail("test@mail.com")).thenReturn(false);        when(authentication.getName()).thenReturn("kayitci1");        when(appUserRepository.findByUsername("kayitci1")).thenReturn(Optional.of(testUser));        when(patientRepository.save(any(Patient.class)))            .thenAnswer(invocation -> invocation.getArgument(0));        Patient result = patientService.create("12345678901", "Ali", "Yılmaz",                                               "5551234567", "test@mail.com", authentication);        assertNotNull(result);        assertEquals("12345678901", result.getTcKimlik());        verify(patientRepository).save(any(Patient.class));    }    @Test    @DisplayName("Aynı TC ile kayıt → CONFLICT hatası")    void create_ayniTc_conflictHatasi() {        when(patientRepository.existsByTcKimlik("12345678901")).thenReturn(true);        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->                patientService.create("12345678901", "Ali", "Yılmaz", "555", "e@m.c",                                      authentication));        assertTrue(ex.getReason().contains("zaten kayıtlı"));    }    @Test    @DisplayName("Kayıtsız hasta ID sorgulanınca NOT_FOUND")    void get_kayitsizHasta_notFound() {        when(patientRepository.findById(999L)).thenReturn(Optional.empty());        assertThrows(ResponseStatusException.class, () -> patientService.get(999L));    }}
+5.4 AdminUserServiceTest – Yılmaz Akkaya (22011020)
+Kullanıcı oluşturma, klinik yönetimi ve silme iş mantığını doğrular.
+Test Adı
+Açıklama
+createClinic_basarili
+Yeni klinik başarıyla oluşturulur; isActive=true olarak kaydedilir.
+deleteClinic_hekimsiz_basarili
+Hekim bağlı olmayan klinik başarıyla silinir.
+deleteClinic_hekimli_hata
+Aktif hekim bağlı klinik silinmeye çalışıldığında hata fırlatılır.
+updateClinic_basarili
+Klinik adı başarıyla güncellenir.
+updateClinic_olmayan_notFound
+Var olmayan klinik güncellenmeye çalışıldığında NOT_FOUND fırlatılır.
+delete_kendiHesabini_hata
+Admin kendi hesabını silmeye çalışınca BAD_REQUEST fırlatılır.
+
+Kaynak Kodu (AdminUserServiceTest.java) – Önemli Metodlar:
+package com.sifa.poliklinik.service;import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Mockito.*;/** * @author Yılmaz Akkaya (Öğrenci No: 22011020) - Test Sorumlusu & Frontend Geliştirici */@ExtendWith(MockitoExtension.class)class AdminUserServiceTest {    @Mock private ClinicRepository clinicRepository;    @Mock private DoctorRepository doctorRepository;    @Mock private AppUserRepository appUserRepository;    @Mock private PasswordEncoder passwordEncoder;    @InjectMocks private AdminUserService adminUserService;    @Test    @DisplayName("Yeni klinik başarıyla oluşturulur")    void createClinic_basarili() {        when(clinicRepository.save(any(Clinic.class)))            .thenAnswer(inv -> inv.getArgument(0));        Clinic result = adminUserService.createClinic(            new AdminCreateClinicRequest("Göz Hastalıkları"));        assertNotNull(result);        assertEquals("Göz Hastalıkları", result.getName());        assertTrue(result.isActive());    }    @Test    @DisplayName("Hekim bağlı klinik silinince hata fırlatılır")    void deleteClinic_hekimli_hata() {        when(clinicRepository.findById(2L)).thenReturn(Optional.of(new Clinic()));        when(doctorRepository.existsByClinicId(2L)).thenReturn(true);        ResponseStatusException ex = assertThrows(ResponseStatusException.class,                () -> adminUserService.deleteClinic(2L));        assertTrue(ex.getReason().contains("hekim"));        verify(clinicRepository, never()).delete(any());    }    @Test    @DisplayName("Admin kendi hesabını silince hata fırlatılır")    void delete_kendiHesabini_hata() {        AppUser admin = new AppUser();        admin.setUsername("admin1");        when(appUserRepository.findById(1L)).thenReturn(Optional.of(admin));        ResponseStatusException ex = assertThrows(ResponseStatusException.class,                () -> adminUserService.delete(1L, "admin1"));        assertTrue(ex.getReason().contains("Kendi"));    }}
+5.5 Test Çalıştırma Sonuçları (Maven Test Logu)
+Projenin tüm birim testleri Maven'in test komutu ile çalıştırılmış; tüm 21 test başarıyla geçmiştir. Resmi terminal çıktısı aşağıda sunulmuştur.
+[INFO] -------------------------------------------------------[INFO]  T E S T S[INFO] -------------------------------------------------------[INFO] Running com.sifa.poliklinik.service.AdminUserServiceTest[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0,       Time elapsed: 0.705 s -- in AdminUserServiceTest[INFO][INFO] Running com.sifa.poliklinik.service.PatientServiceTest[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0,       Time elapsed: 0.096 s -- in PatientServiceTest[INFO][INFO] Running com.sifa.poliklinik.service.InsuranceMockServiceTest[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0,       Time elapsed: 0.014 s -- in InsuranceMockServiceTest[INFO][INFO] Results:[INFO][INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0[INFO][INFO] BUILD SUCCESS[INFO] ------------------------------------------------------------------------[INFO] Total time:  14.887 s[INFO] Finished at: 2026-05-23T15:16:16Z[INFO] ------------------------------------------------------------------------
+Sonuç:
+Toplam 21 birim testi (6 + 7 + 8) tüm başarılı (PASS) olarak tamamlanmış; hata (Failure/Error) ve atlanan (Skip) test bulunmamaktadır. Build süresi 14.887 saniyedir. Test ortamı: Java 21, Spring Boot 3, JUnit 5, Mockito.
+
+6. SONUÇ VE DEĞERLENDİRME
+Bu proje kapsamında "Şifa Polikliniği Bilgi Sistemi" (Konu 1), nesneye dayalı analiz, modelleme ve tasarım prensipleri uygulanarak baştan sona geliştirilmiş ve belgelenmiştir. Gerçekleştirilen çalışmalar aşağıda özetlenmiştir:
+Proje Planı: Proje alan tanımı, fizibilite çalışması, kabul/kısıt kriterleri, 12 haftalık Gantt çizelgesi, ekip organizasyonu ve 8 maddelik risk tablosu hazırlanmıştır.
+İsteklerin Modellenmesi: 5 aktör ve 13 kullanım senaryosunu kapsayan Use Case diyagramı çizilmiş; 3 ana senaryo için detaylı metin ve operasyon sözleşmeleri yazılmıştır. 9 gereksinim × 10 sınıf izlenebilirlik matrisi oluşturulmuştur.
+Nesneye Dayalı Modelleme: 9 entity sınıfı ve aralarındaki kardinalite ilişkilerini gösteren alan sınıfı diyagramı oluşturulmuştur.
+Nesneye Dayalı Tasarım: Katmanlı mimari (Controller–Service–Repository) ile tasarım sınıf diyagramı çizilmiştir. MVC, Repository ve Strategy gibi tasarım kalıpları uygulanmıştır. 2 sıralama (Sequence), 1 durum (State) ve 1 etkinlik (Activity) diyagramı hazırlanmıştır.
+Birim Testleri: 3 test sınıfında toplam 21 birim testi tasarlanmış; her test hangi öğrenciye ait olduğu belirtilmiş ve tüm testler başarıyla (BUILD SUCCESS) geçmiştir.
+Teknoloji: Spring Boot 3 (Java 21) + React 18 (TypeScript) + PostgreSQL + Docker + Spring Security (JWT + BCrypt) + Flyway (DB migration).
+
+Teslim Tarihi: 25 Mayıs 2026, Pazartesi 23:59
